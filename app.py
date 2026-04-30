@@ -9,7 +9,7 @@ from ml_engine.classifier import run_classification
 from ml_engine.clusterer import run_clustering
 from ml_engine.analyzer import generate_classification_summary, generate_clustering_summary
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='/')
 CORS(app)  # Enable CORS for React frontend connecting to this API
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500 MB max
@@ -260,8 +260,6 @@ def analyze_data():
         traceback.print_exc()
         return jsonify({'error': f'Analysis failed: {str(e)}'}), 500
 
-app = Flask(__name__, static_folder='static', static_url_path='/')
-# (Update Flask init)
 @app.route('/')
 def serve_frontend():
     return app.send_static_file('index.html')

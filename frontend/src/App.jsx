@@ -3,8 +3,8 @@ import axios from 'axios';
 import { Upload, Cpu, Database, Settings2, BarChart4, Moon, Sun, ChevronRight, Activity, Zap, ShieldAlert, Sparkles, Filter, Trash2, Edit3, BarChart, LineChart as LineChartIcon, ScatterChart as ScatterIcon } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Legend, BarChart as RechartsBarChart, Bar, LineChart, Line } from 'recharts';
 
-// Use environment variable for API URL
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// Use environment variable for API URL, default to empty for relative paths in prod
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : '');
 const COLORS = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#ffff33', '#a65628', '#f781bf', '#999999'];
 
 function App() {
