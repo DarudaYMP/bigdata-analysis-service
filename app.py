@@ -260,5 +260,18 @@ def analyze_data():
         traceback.print_exc()
         return jsonify({'error': f'Analysis failed: {str(e)}'}), 500
 
+app = Flask(__name__, static_folder='static', static_url_path='/')
+# (Update Flask init)
+@app.route('/')
+def serve_frontend():
+    return app.send_static_file('index.html')
+@app.route('/<path:path>')
+def static_proxy(path):
+    # Serve files from static directory, fallback to index.html for React Router
+    import os
+    if os.path.exists(os.path.join(app.root_path, 'static', path)):
+        return app.send_static_file(path)
+    return app.send_static_file('index.html')
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
