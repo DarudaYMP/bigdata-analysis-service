@@ -237,8 +237,18 @@ def analyze_data():
                 chart_data.append({
                     'x': round(row['pca_x'], 3) if not pd.isna(row['pca_x']) else 0,
                     'y': round(row['pca_y'], 3) if not pd.isna(row['pca_y']) else 0,
-                    'cluster': str(row['prediction'])
+                    'cluster': str(row['prediction']),
+                    'isCentroid': False
                 })
+            
+            if 'centroids' in results and results['centroids']:
+                for c in results['centroids']:
+                    chart_data.append({
+                        'x': round(c['pca_x'], 3),
+                        'y': round(c['pca_y'], 3),
+                        'cluster': c['cluster'],
+                        'isCentroid': True
+                    })
             
             return jsonify({
                 'metrics': {
