@@ -1,3 +1,11 @@
+---
+title: Big Data Analysis Service
+emoji: 📊
+colorFrom: blue
+colorTo: purple
+sdk: docker
+pinned: false
+---
 # Datacluster Pro (Big Data Analysis Service)
 
 Проєкт складається з двох частин: **Python-бекенду** (для машинного навчання) та **React-фронтенду** (для інтерфейсу користувача). Щоб сервіс працював коректно, обидві частини мають працювати одночасно у двох окремих терміналах.
