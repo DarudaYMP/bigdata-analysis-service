@@ -1,0 +1,32 @@
+# Environments
+venv/
+env/
+.env
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+dist/
+build/
+.npm/
+
+# Logs and databases
+*.log
+*.sqlite3
+*.db
+
+# Uploads
+uploads/
+*.csv
+*.xlsx
+*.json
+*.parquet
+*.avro
+!sample_dataset.csv
+
+# IDEs and OS files
+.vscode/
+.idea/
+.DS_Store
+*.swp
