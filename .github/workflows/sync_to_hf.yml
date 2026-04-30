@@ -16,5 +16,5 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git remote add space https://huggingface.co/spaces/DarudaYMP/big-data-analysis-service
+          git remote add space https://DarudaYMP:$HF_TOKEN@huggingface.co/spaces/DarudaYMP/big-data-analysis-service
           git push --force space main
