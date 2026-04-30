@@ -67,11 +67,10 @@ def _get_llm_advice(prompt, fallback_recs):
     try:
         from g4f.client import Client
         import g4f
-        from g4f.models import gpt_35_turbo
         g4f.debug.logging = False
         client = Client()
         response = client.chat.completions.create(
-            model=gpt_35_turbo,
+            model=g4f.models.default,
             messages=[{"role": "user", "content": prompt}]
         )
         answer = response.choices[0].message.content.strip()
