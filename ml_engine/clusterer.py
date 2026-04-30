@@ -72,8 +72,24 @@ def run_clustering(df, feature_cols, k=3, algorithm="kmeans"):
     # Random sample of 100 to prevent Recharts rendering lag
     sample_df = df_pca.sample(min(150, len(df_pca)))
     
+    # Extract centroids and transform them with PCA
+    centroids_data = []
+    if algorithm in ["kmeans", "bisecting_kmeans"] and hasattr(clusterer, "cluster_centers_"):
+        centroids = clusterer.cluster_centers_
+        if X_transformed.shape[1] >= 2:
+            centroids_pca_array = pca.transform(centroids)
+        else:
+            centroids_pca_array = np.hstack((centroids, np.zeros((centroids.shape[0], 1))))
+        for i, c in enumerate(centroids_pca_array):
+            centroids_data.append({
+                "pca_x": float(c[0]),
+                "pca_y": float(c[1]),
+                "cluster": f"Cluster {i}"
+            })
+            
     return {
         "silhouette_score": silhouette,
         "sample_data": sample_df,
+        "centroids": centroids_data,
         "k": k
     }

@@ -502,3 +502,60 @@ body {
 [data-theme='dark'] .data-table tr:nth-child(even) {
   background-color: rgba(255,255,255,0.02);
 }
+
+/* Responsive Mobile-First adjustments for iframe/Hugging Face */
+@media (max-width: 900px) {
+  .layout {
+    flex-direction: column;
+  }
+  .workspace {
+    flex-direction: column;
+    height: auto;
+  }
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .sidebar-heading {
+    width: 100%;
+    padding: 1rem;
+    text-align: center;
+  }
+  .nav-item {
+    flex: 1;
+    justify-content: center;
+    border-left: none;
+    border-bottom: 3px solid transparent;
+    padding: 1rem 0.5rem;
+    font-size: 0.75rem;
+  }
+  .nav-item.active {
+    border-left-color: transparent;
+    border-bottom-color: var(--accent);
+  }
+  .main-content {
+    padding: 1.5rem 1rem;
+  }
+  .feature-cards {
+    flex-direction: column;
+  }
+  .analysis-layout {
+    grid-template-columns: 1fr !important;
+  }
+  .metric-grid {
+    grid-template-columns: 1fr;
+  }
+  .hero-section h2 {
+    font-size: 2.2rem;
+  }
+  .brand h1 {
+    font-size: 1rem;
+  }
+  .top-nav {
+    padding: 0 1rem;
+  }
+}

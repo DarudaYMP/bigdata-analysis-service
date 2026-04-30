@@ -1,7 +1,23 @@
 import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { Upload, Cpu, Database, Settings2, BarChart4, Moon, Sun, ChevronRight, Activity, Zap, ShieldAlert, Sparkles, Filter, Trash2, Edit3, BarChart, LineChart as LineChartIcon, ScatterChart as ScatterIcon } from 'lucide-react';
+import { Upload, Cpu, Database, Settings2, BarChart4, Moon, Sun, ChevronRight, Activity, Zap, ShieldAlert, Sparkles, Filter, Trash2, Edit3, BarChart, LineChart as LineChartIcon, ScatterChart as ScatterIcon, HelpCircle } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Legend, BarChart as RechartsBarChart, Bar, LineChart, Line } from 'recharts';
+import Swal from 'sweetalert2';
+import 'katex/dist/katex.min.css';
+import { BlockMath, InlineMath } from 'react-katex';
+
+const CentroidShape = (props) => {
+  const { cx, cy, fill, payload } = props;
+  if (payload.isCentroid) {
+    return (
+      <g transform={`translate(${cx},${cy})`}>
+        <path d="M-8,-8 L8,8 M8,-8 L-8,8" stroke={fill} strokeWidth={4} />
+        <path d="M-8,-8 L8,8 M8,-8 L-8,8" stroke="#000" strokeWidth={1} opacity={0.5} />
+      </g>
+    );
+  }
+  return <circle cx={cx} cy={cy} r={4} fill={fill} />;
+};
 
 // Use environment variable for API URL, default to empty for relative paths in prod
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : '');
@@ -46,6 +62,9 @@ function App() {
     setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
+  const showError = (msg) => Swal.fire({ icon: 'error', title: 'Увага', text: msg, background: theme === 'dark' ? '#1e293b' : '#fff', color: theme === 'dark' ? '#f8fafc' : '#1f2937' });
+  const showSuccess = (msg) => Swal.fire({ icon: 'success', title: 'Успіх', text: msg, timer: 1500, showConfirmButton: false, background: theme === 'dark' ? '#1e293b' : '#fff', color: theme === 'dark' ? '#f8fafc' : '#1f2937' });
+
   const handleFileUpload = async (e) => {
     const selectedFile = e.target.files[0];
     if (!selectedFile) return;
@@ -71,7 +90,7 @@ function App() {
 
       setCurrentStep('cleaning');
     } catch (err) {
-      alert('Помилка завантаження файлу: ' + (err.response?.data?.error || err.message));
+      showError('Помилка завантаження файлу: ' + (err.response?.data?.error || err.message));
     } finally {
       setUploading(false);
     }
@@ -85,9 +104,9 @@ function App() {
       setPreviewData(res.data.preview || []);
       setEdaInsights(res.data.insights || []);
       setColumns(res.data.columns || columns);
-      alert('Очищення успішно виконано!');
+      showSuccess('Очищення успішно виконано!');
     } catch (err) {
-      alert('Помилка очищення: ' + (err.response?.data?.error || err.message));
+      showError('Помилка очищення: ' + (err.response?.data?.error || err.message));
     } finally {
       setCleaning(false);
     }
@@ -100,7 +119,7 @@ function App() {
       const res = await axios.post(`${API_URL}/plot`, payload);
       setVisData(res.data.chartData || []);
     } catch (err) {
-      alert('Помилка генерації графіка: ' + (err.response?.data?.error || err.message));
+      showError('Помилка генерації графіка: ' + (err.response?.data?.error || err.message));
     } finally {
       setPlotting(false);
     }
@@ -108,7 +127,7 @@ function App() {
 
   const runAnalysis = async () => {
     if (selectedFeatures.length === 0) {
-      alert("Оберіть хоча б одну ознаку.");
+      showError("Оберіть хоча б одну ознаку.");
       return;
     }
     setAnalyzing(true);
@@ -117,8 +136,9 @@ function App() {
       const payload = { file_path: fileId, analysis_type: analysisType, algorithm: algorithm, features: selectedFeatures, target: targetColumn, k: kValue };
       const res = await axios.post(`${API_URL}/analyze`, payload);
       setResults(res.data);
+      showSuccess('Аналіз успішно завершено!');
     } catch (err) {
-      alert('Помилка аналізу: ' + (err.response?.data?.error || err.message));
+      showError('Помилка аналізу: ' + (err.response?.data?.error || err.message));
     } finally {
       setAnalyzing(false);
     }
@@ -183,7 +203,7 @@ function App() {
             <RechartsTooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-main)' }} itemStyle={{ color: 'var(--text-main)' }} />
             <Legend wrapperStyle={{ color: 'var(--text-main)' }} />
             {Object.keys(dataByCluster).map((clusterId, index) => (
-              <Scatter key={clusterId} name={clusterId} data={dataByCluster[clusterId]} fill={COLORS[index % COLORS.length]} />
+              <Scatter key={clusterId} name={clusterId} data={dataByCluster[clusterId]} fill={COLORS[index % COLORS.length]} shape={<CentroidShape />} />
             ))}
           </ScatterChart>
         </ResponsiveContainer>
@@ -447,6 +467,43 @@ function App() {
             </div>
           </div>
         );
+
+      case 'help':
+        return (
+          <div className="panel" style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'left', marginTop: 0 }}>
+            <h2 style={{ fontSize: '2rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}><HelpCircle size={28} color="var(--accent)" /> База Знань (Knowledge Base)</h2>
+            
+            <h3 style={{ fontSize: '1.25rem', color: 'var(--accent)', marginBottom: '0.5rem' }}>Що таке Кластеризація?</h3>
+            <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
+              Кластеризація (Clustering) — це метод машинного навчання <b>без учителя</b>, завданням якого є поділ набору даних на групи (кластери) таким чином, щоб об'єкти в одній групі були максимально схожі між собою, а об'єкти з різних груп — відрізнялися.
+            </p>
+            
+            <h4 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>K-Means (k-середніх)</h4>
+            <p style={{ marginBottom: '1rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
+              Алгоритм K-Means намагається мінімізувати сумарне квадратичне відхилення точок кластерів від центрів цих кластерів (центроїдів). Математично це виглядає як мінімізація інерції:
+            </p>
+            <div style={{ background: 'var(--bg-main)', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', overflowX: 'auto' }}>
+              <BlockMath math="J = \sum_{i=1}^{k} \sum_{x \in C_i} ||x - \mu_i||^2" />
+            </div>
+            <p style={{ margin: '1rem 0 2rem 0', color: 'var(--text-muted)', lineHeight: '1.6' }}>
+              де <InlineMath math="k" /> — кількість кластерів, <InlineMath math="C_i" /> — множина точок <InlineMath math="i" />-го кластеру, а <InlineMath math="\mu_i" /> — центроїд цього кластеру. Центроїди на графіках позначаються великими хрестиками.
+            </p>
+
+            <h4 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>DBSCAN</h4>
+            <p style={{ marginBottom: '2.5rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
+              DBSCAN (Density-Based Spatial Clustering of Applications with Noise) групує точки, які знаходяться щільно одна біля одної, і позначає точки в регіонах з низькою щільністю як шум (викиди).
+            </p>
+
+            <h3 style={{ fontSize: '1.25rem', color: 'var(--accent)', marginBottom: '0.5rem' }}>Що таке Класифікація?</h3>
+            <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
+              Класифікація — це задача навчання <b>з учителем</b>, коли алгоритм вчиться визначати категорію (клас) нових спостережень на основі тренувальних даних, які вже містять правильні відповіді (розмічені теги).
+            </p>
+            <h4 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>Випадковий ліс (Random Forest)</h4>
+            <p style={{ marginBottom: '1rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
+              Цей метод будує ансамбль з багатьох дерев рішень. Клас визначається шляхом "голосування" більшості дерев. Це дозволяє уникнути перенавчання (overfitting) та підвищує загальну точність.
+            </p>
+          </div>
+        );
     }
   };
 
@@ -475,21 +532,25 @@ function App() {
           </div>
 
           <div className={`nav-item ${currentStep === 'cleaning' ? 'active' : ''}`} onClick={() => {
-            if (fileId) setCurrentStep('cleaning'); else alert('Спочатку завантажте файл.');
+            if (fileId) setCurrentStep('cleaning'); else showError('Спочатку завантажте файл.');
           }}>
             <Filter size={18} /> Очищення даних
           </div>
 
           <div className={`nav-item ${currentStep === 'visualization' ? 'active' : ''}`} onClick={() => {
-            if (fileId) setCurrentStep('visualization'); else alert('Спочатку завантажте файл.');
+            if (fileId) setCurrentStep('visualization'); else showError('Спочатку завантажте файл.');
           }}>
             <Sparkles size={18} /> Візуалізація
           </div>
 
           <div className={`nav-item ${currentStep === 'analysis' ? 'active' : ''}`} onClick={() => {
-            if (fileId) setCurrentStep('analysis'); else alert('Спочатку завантажте файл.');
+            if (fileId) setCurrentStep('analysis'); else showError('Спочатку завантажте файл.');
           }}>
             <BarChart4 size={18} /> Аналіз та Діагностика
+          </div>
+
+          <div className={`nav-item ${currentStep === 'help' ? 'active' : ''}`} onClick={() => setCurrentStep('help')}>
+            <HelpCircle size={18} /> Довідка
           </div>
 
           <div style={{ flex: 1 }}></div>
