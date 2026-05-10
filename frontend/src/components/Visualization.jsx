@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import Plotly from 'plotly.js-dist-min';
-import createPlotlyComponent from 'react-plotly.js/factory';
-const Plot = createPlotlyComponent(Plotly);
+import { ResponsiveContainer, BarChart, Bar, LineChart, Line, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { BarChart4 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 
@@ -11,7 +9,7 @@ const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://l
 
 /**
  * Visualization Component
- * Handles dynamic exploratory data visualization using Plotly.
+ * Handles dynamic exploratory data visualization using Recharts.
  */
 const Visualization = () => {
   const { 
@@ -28,23 +26,55 @@ const Visualization = () => {
     try {
       const payload = { file_path: fileId, x_col: visXCol, y_col: visYCol, chart_type: visChartType };
       const res = await axios.post(`${API_URL}/plot`, payload);
-      
-      // Transform backend points [{x, y}] to Plotly format {x: [], y: []}
-      const rawData = res.data.chartData || [];
-      const plotData = {
-        x: rawData.map(d => d.x),
-        y: rawData.map(d => d.y),
-        type: visChartType === 'scatter' ? 'scatter' : (visChartType === 'line' ? 'scatter' : 'bar'),
-        mode: visChartType === 'scatter' ? 'markers' : (visChartType === 'line' ? 'lines+markers' : undefined),
-        marker: { color: 'var(--accent)' }
-      };
-      
-      setVisData([plotData]);
+      setVisData(res.data.chartData || []);
     } catch (err) {
       Swal.fire('Помилка', err.response?.data?.error || err.message, 'error');
     } finally {
       setLoading(false);
     }
+  };
+
+  const renderChart = () => {
+    if (!visData || visData.length === 0) return <div style={{ color: 'var(--text-muted)' }}>Оберіть параметри та натисніть "Побудувати графік"</div>;
+
+    if (visChartType === 'bar') {
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={visData} margin={{ top: 20, right: 30, left: 20, bottom: 50 }}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.2} vertical={false} />
+            <XAxis dataKey="x" stroke="var(--text-muted)" tick={{ fill: 'var(--text-main)' }} angle={-45} textAnchor="end" />
+            <YAxis stroke="var(--text-muted)" tick={{ fill: 'var(--text-main)' }} />
+            <Tooltip contentStyle={{ backgroundColor: 'var(--bg-main)', borderColor: 'var(--border-color)', color: 'var(--text-main)' }} />
+            <Bar dataKey="y" fill="var(--accent)" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      );
+    } else if (visChartType === 'line') {
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={visData} margin={{ top: 20, right: 30, left: 20, bottom: 50 }}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.2} vertical={false} />
+            <XAxis dataKey="x" stroke="var(--text-muted)" tick={{ fill: 'var(--text-main)' }} angle={-45} textAnchor="end" />
+            <YAxis stroke="var(--text-muted)" tick={{ fill: 'var(--text-main)' }} />
+            <Tooltip contentStyle={{ backgroundColor: 'var(--bg-main)', borderColor: 'var(--border-color)', color: 'var(--text-main)' }} />
+            <Line type="monotone" dataKey="y" stroke="var(--accent)" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 8 }} />
+          </LineChart>
+        </ResponsiveContainer>
+      );
+    } else if (visChartType === 'scatter') {
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <ScatterChart margin={{ top: 20, right: 30, left: 20, bottom: 50 }}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+            <XAxis type="number" dataKey="x" name={visXCol} stroke="var(--text-muted)" tick={{ fill: 'var(--text-main)' }} />
+            <YAxis type="number" dataKey="y" name={visYCol} stroke="var(--text-muted)" tick={{ fill: 'var(--text-main)' }} />
+            <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{ backgroundColor: 'var(--bg-main)', borderColor: 'var(--border-color)', color: 'var(--text-main)' }} />
+            <Scatter name="Data" data={visData} fill="var(--accent)" />
+          </ScatterChart>
+        </ResponsiveContainer>
+      );
+    }
+    return null;
   };
 
   return (
@@ -78,23 +108,7 @@ const Visualization = () => {
       </div>
 
       <div className="panel" style={{ marginTop: 0, height: '600px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {visData && visData.length > 0 ? (
-          <Plot
-            data={visData}
-            layout={{ 
-              autosize: true, 
-              paper_bgcolor: 'rgba(0,0,0,0)', 
-              plot_bgcolor: 'rgba(0,0,0,0)', 
-              font: { color: 'var(--text-main)' },
-              xaxis: { title: visXCol },
-              yaxis: { title: visYCol || 'Кількість' }
-            }}
-            useResizeHandler={true}
-            style={{ width: '100%', height: '100%' }}
-          />
-        ) : (
-          <div style={{ color: 'var(--text-muted)' }}>Оберіть параметри та натисніть "Побудувати графік"</div>
-        )}
+        {renderChart()}
       </div>
     </div>
   );

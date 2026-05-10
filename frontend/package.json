@@ -14,12 +14,11 @@
     "katex": "^0.16.45",
     "lucide-react": "^1.8.0",
     "plotly.js": "^3.5.1",
-    "plotly.js-dist-min": "^3.5.1",
     "prop-types": "^15.8.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-katex": "^3.1.0",
-    "react-plotly.js": "^2.6.0",
+    "recharts": "^3.8.1",
     "sweetalert2": "^11.26.24",
     "zustand": "^5.0.13"
   },

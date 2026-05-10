@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { HelpCircle, Activity, Zap } from 'lucide-react';
-import Plotly from 'plotly.js-dist-min';
-import createPlotlyComponent from 'react-plotly.js/factory';
-const Plot = createPlotlyComponent(Plotly);
+import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 /**
  * Knowledge Base Component
@@ -86,10 +84,8 @@ const Knowledge = () => {
     };
     const item = details[helpView];
     
-    // Generate a static preview chart using plotly
-    const x = Array.from({length: 50}, () => Math.random() * 100);
-    const y = Array.from({length: 50}, () => Math.random() * 100);
-    const color = Array.from({length: 50}, (_, i) => i % 3);
+    // Generate a static preview chart
+    const mockData = Array.from({length: 50}, (_, i) => ({ x: Math.random() * 100, y: Math.random() * 100, cluster: i % 3 }));
     
     return (
       <div className="panel" style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'left', marginTop: 0 }}>
@@ -97,12 +93,14 @@ const Knowledge = () => {
         <h2 style={{ fontSize: '2rem', marginBottom: '1.5rem' }}>{item.title}</h2>
         <p style={{ marginBottom: '2rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>{item.desc}</p>
         <div style={{ height: '300px', background: 'var(--bg-main)', borderRadius: '8px', padding: '1rem' }}>
-          <Plot
-            data={[{ x, y, mode: 'markers', marker: { color, colorscale: 'Viridis' }, type: 'scatter' }]}
-            layout={{ autosize: true, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', margin: {t:0,b:0,l:0,r:0} }}
-            useResizeHandler={true}
-            style={{ width: '100%', height: '100%' }}
-          />
+          <ResponsiveContainer width="100%" height="100%">
+            <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.2} vertical={false} stroke="var(--border-color)" />
+              <XAxis type="number" dataKey="x" stroke="var(--border-color)" tick={false} />
+              <YAxis type="number" dataKey="y" stroke="var(--border-color)" tick={false} />
+              <Scatter name="Points" data={mockData} fill="var(--accent)" />
+            </ScatterChart>
+          </ResponsiveContainer>
         </div>
       </div>
     );

@@ -1,14 +1,33 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import Plotly from 'plotly.js-dist-min';
-import createPlotlyComponent from 'react-plotly.js/factory';
-const Plot = createPlotlyComponent(Plotly);
+import { ResponsiveContainer, PieChart, Pie, Cell, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from 'recharts';
 import { Sparkles, Brain, Cpu } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import PropTypes from 'prop-types';
 
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : '');
+const COLORS = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#ffff33', '#a65628', '#f781bf', '#999999'];
+
+const CentroidShape = (props) => {
+  const { cx, cy, fill, payload } = props;
+  if (payload.isCentroid) {
+    return (
+      <g transform={`translate(${cx},${cy})`}>
+        <path d="M-8,-8 L8,8 M8,-8 L-8,8" stroke={fill} strokeWidth={4} />
+        <path d="M-8,-8 L8,8 M8,-8 L-8,8" stroke="#000" strokeWidth={1} opacity={0.5} />
+      </g>
+    );
+  }
+  return <circle cx={cx} cy={cy} r={4} fill={fill} />;
+};
+
+CentroidShape.propTypes = {
+  cx: PropTypes.number,
+  cy: PropTypes.number,
+  fill: PropTypes.string,
+  payload: PropTypes.object
+};
 
 /**
  * Analysis Component
@@ -49,53 +68,42 @@ const Analysis = () => {
     }
   };
 
-  const renderPlotlyChart = () => {
+  const renderChart = () => {
     if (!results || !results.chartData) return null;
     
     if (results.chartType === 'pie') {
-      const labels = results.chartData.map(d => d.name);
-      const values = results.chartData.map(d => d.value);
       return (
-        <Plot
-          data={[{ values, labels, type: 'pie', hole: 0.4 }]}
-          layout={{ autosize: true, paper_bgcolor: 'rgba(0,0,0,0)', font: { color: 'var(--text-main)' } }}
-          useResizeHandler={true}
-          style={{ width: '100%', height: '100%' }}
-        />
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie data={results.chartData} cx="50%" cy="50%" innerRadius={80} outerRadius={120} paddingAngle={5} dataKey="value">
+              {results.chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+            </Pie>
+            <RechartsTooltip contentStyle={{ backgroundColor: 'var(--bg-main)', borderColor: 'var(--border-color)', color: 'var(--text-main)' }} />
+            <Legend />
+          </PieChart>
+        </ResponsiveContainer>
       );
     } else if (results.chartType === 'scatter') {
-      const points = results.chartData.filter(d => !d.isCentroid);
-      const centroids = results.chartData.filter(d => d.isCentroid);
-      
-      const traces = [];
+      // Group points by cluster
       const clustersMap = {};
-      
-      points.forEach(p => {
-        if (!clustersMap[p.cluster]) clustersMap[p.cluster] = { x: [], y: [], mode: 'markers', type: 'scatter', name: p.cluster, marker: { size: 8 } };
-        clustersMap[p.cluster].x.push(p.x);
-        clustersMap[p.cluster].y.push(p.y);
+      results.chartData.forEach(p => {
+        if (!clustersMap[p.cluster]) clustersMap[p.cluster] = [];
+        clustersMap[p.cluster].push(p);
       });
       
-      Object.values(clustersMap).forEach(trace => traces.push(trace));
-      
-      if (centroids.length > 0) {
-        traces.push({
-          x: centroids.map(c => c.x),
-          y: centroids.map(c => c.y),
-          mode: 'markers',
-          type: 'scatter',
-          name: 'Centroids',
-          marker: { symbol: 'x', size: 12, color: 'black' }
-        });
-      }
-      
       return (
-        <Plot
-          data={traces}
-          layout={{ autosize: true, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: { color: 'var(--text-main)' } }}
-          useResizeHandler={true}
-          style={{ width: '100%', height: '100%' }}
-        />
+        <ResponsiveContainer width="100%" height="100%">
+          <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.2} vertical={false} stroke="var(--border-color)" />
+            <XAxis type="number" dataKey="x" stroke="var(--border-color)" name={results.axisLabels.x} />
+            <YAxis type="number" dataKey="y" stroke="var(--border-color)" name={results.axisLabels.y} />
+            <RechartsTooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{ backgroundColor: 'var(--bg-main)', borderColor: 'var(--border-color)', color: 'var(--text-main)' }} />
+            <Legend />
+            {Object.keys(clustersMap).map((clusterId, index) => (
+              <Scatter key={clusterId} name={clusterId} data={clustersMap[clusterId]} fill={COLORS[index % COLORS.length]} shape={<CentroidShape />} />
+            ))}
+          </ScatterChart>
+        </ResponsiveContainer>
       );
     }
     return null;
@@ -173,7 +181,7 @@ const Analysis = () => {
             <p style={{ marginTop: '1.5rem', lineHeight: '1.6', fontSize: '1.05rem', color: 'var(--text-main)' }}>{results.summary}</p>
             
             <div style={{ height: '400px', marginTop: '2rem', background: 'var(--bg-main)', borderRadius: '12px', padding: '1rem' }}>
-              {renderPlotlyChart()}
+              {renderChart()}
             </div>
 
             <div className="text-content-box" style={{ background: 'var(--bg-main)', padding: '1.5rem', borderRadius: '8px', marginTop: '2rem' }}>
