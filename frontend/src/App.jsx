@@ -45,6 +45,7 @@ function App() {
   const [kValue, setKValue] = useState(3);
 
   const [results, setResults] = useState(null);
+  const [duplicateColumns, setDuplicateColumns] = useState([]);
 
   // Custom Visualization States
   const [visXCol, setVisXCol] = useState('');
@@ -96,10 +97,10 @@ function App() {
     }
   };
 
-  const handleCleaning = async (actionStr) => {
+  const handleCleaning = async (actionStr, extraPayload = {}) => {
     setCleaning(true);
     try {
-      const payload = { file_path: fileId, action: actionStr };
+      const payload = { file_path: fileId, action: actionStr, ...extraPayload };
       const res = await axios.post(`${API_URL}/clean`, payload);
       setPreviewData(res.data.preview || []);
       setEdaInsights(res.data.insights || []);
@@ -280,20 +281,41 @@ function App() {
               <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>Нормалізуйте сирі дані перед візуалізацією або моделюванням.</p>
 
               <div className="feature-cards">
-                <div className="feature-card" style={{ cursor: 'pointer' }} onClick={() => handleCleaning('drop_duplicates')}>
+                <div className="feature-card">
                   <Trash2 size={24} color="var(--accent)" />
                   <h3>Видалити дублікати</h3>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Знайти та видалити ідентичні рядки (OpenRefine).</p>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', flex: 1 }}>Знайти та видалити ідентичні рядки. Оберіть стовпці (порожньо = весь рядок):</p>
+                  
+                  <div className="checkbox-grid" style={{ gridTemplateColumns: '1fr', maxHeight: '120px', overflowY: 'auto', padding: '0.5rem', background: 'var(--bg-main)', borderRadius: '6px', marginBottom: '0.5rem' }}>
+                    {columns.map(col => (
+                      <label key={col} className="checkbox-item" style={{ marginBottom: '0.25rem', padding: '0.35rem', fontSize: '0.75rem' }}>
+                        <input type="checkbox" checked={duplicateColumns.includes(col)} onChange={() => {
+                          setDuplicateColumns(prev => prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col]);
+                        }} />
+                        {col}
+                      </label>
+                    ))}
+                  </div>
+
+                  <button className="btn-primary" style={{ width: '100%', padding: '0.75rem', fontSize: '0.75rem', justifyContent: 'center' }} onClick={() => handleCleaning('drop_duplicates', { subset: duplicateColumns })} disabled={cleaning}>
+                    ВИКОНАТИ
+                  </button>
                 </div>
-                <div className="feature-card" style={{ cursor: 'pointer' }} onClick={() => handleCleaning('drop_nulls')}>
+                <div className="feature-card">
                   <Activity size={24} color="var(--accent)" />
                   <h3>Видалити порожні</h3>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Форсовано видалити рядки з NaN для строгої чистоти.</p>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', flex: 1 }}>Форсовано видалити рядки з NaN для строгої чистоти.</p>
+                  <button className="btn-primary" style={{ width: '100%', padding: '0.75rem', fontSize: '0.75rem', justifyContent: 'center', marginTop: 'auto' }} onClick={() => handleCleaning('drop_nulls')} disabled={cleaning}>
+                    ВИКОНАТИ
+                  </button>
                 </div>
-                <div className="feature-card" style={{ cursor: 'pointer' }} onClick={() => handleCleaning('lower_text')}>
+                <div className="feature-card">
                   <Edit3 size={24} color="var(--accent)" />
                   <h3>Нормалізація тексту</h3>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Перетворити весь текст у нижній регістр для стандартизації.</p>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', flex: 1 }}>Перетворити весь текст у нижній регістр для стандартизації.</p>
+                  <button className="btn-primary" style={{ width: '100%', padding: '0.75rem', fontSize: '0.75rem', justifyContent: 'center', marginTop: 'auto' }} onClick={() => handleCleaning('lower_text')} disabled={cleaning}>
+                    ВИКОНАТИ
+                  </button>
                 </div>
               </div>
 

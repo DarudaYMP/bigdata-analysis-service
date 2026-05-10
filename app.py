@@ -32,6 +32,7 @@ def upload_file():
         file.save(save_path)
         
         try:
+            df = None
             if save_path.endswith('.csv'):
                 df = pd.read_csv(save_path, sep=None, engine='python', on_bad_lines='skip')
             elif save_path.endswith('.xlsx'):
@@ -43,6 +44,9 @@ def upload_file():
             elif save_path.endswith('.avro'):
                 import pandavro as pdx
                 df = pdx.read_avro(save_path)
+                
+            if df is None:
+                return jsonify({'error': 'Failed to parse file: unsupported format'}), 400
                 
             columns = df.columns.tolist()
             preview_data = df.head(10).fillna("").to_dict(orient="records")
@@ -66,6 +70,7 @@ def clean_data():
     data = request.json
     file_path = data.get('file_path')
     action = data.get('action') # 'drop_duplicates', 'drop_nulls', 'lower_text'
+    subset = data.get('subset', [])
     
     if not file_path or not os.path.exists(file_path):
         return jsonify({'error': 'File not found'}), 404
@@ -85,7 +90,10 @@ def clean_data():
             return jsonify({'error': 'Unsupported file format'}), 400
             
         if action == 'drop_duplicates':
-            df = df.drop_duplicates()
+            if subset and len(subset) > 0:
+                df = df.drop_duplicates(subset=subset)
+            else:
+                df = df.drop_duplicates()
         elif action == 'drop_nulls':
             df = df.dropna()
         elif action == 'lower_text':
@@ -150,8 +158,12 @@ def plot_data():
                     return jsonify({'error': 'Цей стовпець містить унікальні ID і не підходить для даного типу графіка.'}), 400
 
             if y_col:
-                # Group by X and take Mean of Y
-                grouped = df.groupby(x_col)[y_col].mean().reset_index()
+                # Group by X
+                if pd.api.types.is_numeric_dtype(df[y_col]):
+                    grouped = df.groupby(x_col)[y_col].mean().reset_index()
+                else:
+                    grouped = df.groupby(x_col).size().reset_index(name=y_col)
+                    
                 # Limit to top 50 strictly for performance
                 grouped = grouped.sort_values(by=y_col, ascending=False).head(50)
                 for _, row in grouped.iterrows():
