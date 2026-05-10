@@ -36,6 +36,13 @@ def upload_file():
             if save_path.endswith('.csv'):
                 df = pd.read_csv(save_path, sep=None, engine='python', on_bad_lines='skip')
             elif save_path.endswith('.xlsx'):
+                xls = pd.ExcelFile(save_path)
+                if len(xls.sheet_names) > 1:
+                    return jsonify({
+                        'file_path': save_path,
+                        'needs_sheet_selection': True,
+                        'sheets': xls.sheet_names
+                    })
                 df = pd.read_excel(save_path)
             elif save_path.endswith('.json'):
                 df = pd.read_json(save_path)
@@ -124,6 +131,97 @@ def clean_data():
         import traceback
         traceback.print_exc()
         return jsonify({'error': f'Failed to clean data: {str(e)}'}), 500
+
+def _load_df(file_path, sheet_name=None):
+    if file_path.endswith('.csv'): return pd.read_csv(file_path, sep=None, engine='python', on_bad_lines='skip')
+    elif file_path.endswith('.xlsx'): return pd.read_excel(file_path, sheet_name=sheet_name or 0)
+    elif file_path.endswith('.json'): return pd.read_json(file_path)
+    elif file_path.endswith('.parquet'): return pd.read_parquet(file_path)
+    elif file_path.endswith('.avro'): 
+        import pandavro as pdx
+        return pdx.read_avro(file_path)
+    return None
+
+@app.route('/select_sheet', methods=['POST'])
+def select_sheet():
+    data = request.json
+    save_path = data.get('file_path')
+    sheet_name = data.get('sheet_name')
+    if not save_path or not sheet_name:
+        return jsonify({'error': 'Missing file_path or sheet_name'}), 400
+    try:
+        df = pd.read_excel(save_path, sheet_name=sheet_name)
+        columns = df.columns.tolist()
+        preview_data = df.head(10).fillna("").to_dict(orient="records")
+        from ml_engine.analyzer import generate_eda_insights
+        eda_insights = generate_eda_insights(df)
+        return jsonify({
+            'file_path': save_path, 
+            'columns': columns,
+            'preview': preview_data,
+            'insights': eda_insights
+        })
+    except Exception as e:
+        return jsonify({'error': f'Failed to process sheet: {str(e)}'}), 500
+
+@app.route('/get_page', methods=['POST'])
+def get_page():
+    data = request.json
+    file_path = data.get('file_path')
+    page = int(data.get('page', 1))
+    per_page = int(data.get('per_page', 50))
+    try:
+        df = _load_df(file_path)
+        if df is None: return jsonify({'error': 'Invalid file'}), 400
+        total_rows = len(df)
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        page_data = df.iloc[start_idx:end_idx].fillna("").to_dict(orient="records")
+        return jsonify({'data': page_data, 'total_rows': total_rows})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/update_cell', methods=['POST'])
+def update_cell():
+    data = request.json
+    file_path = data.get('file_path')
+    row_index = int(data.get('row_index'))
+    column = data.get('column')
+    new_value = data.get('value')
+    
+    try:
+        df = _load_df(file_path)
+        if df is None: return jsonify({'error': 'Invalid file'}), 400
+        
+        # Check if column is numeric, try casting new_value
+        if pd.api.types.is_numeric_dtype(df[column]):
+            try:
+                new_value = float(new_value)
+            except ValueError:
+                return jsonify({'error': 'Invalid numeric value'}), 400
+                
+        df.at[row_index, column] = new_value
+        
+        # Save back
+        if file_path.endswith('.csv'): df.to_csv(file_path, index=False)
+        elif file_path.endswith('.xlsx'): df.to_excel(file_path, index=False)
+        elif file_path.endswith('.json'): df.to_json(file_path, orient='records')
+        elif file_path.endswith('.parquet'): df.to_parquet(file_path, index=False)
+        elif file_path.endswith('.avro'): 
+            import pandavro as pdx
+            pdx.to_avro(file_path, df)
+            
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/download', methods=['GET'])
+def download_file():
+    file_path = request.args.get('file_path')
+    if not file_path or not os.path.exists(file_path):
+        return jsonify({'error': 'File not found'}), 404
+    from flask import send_file
+    return send_file(file_path, as_attachment=True)
 
 @app.route('/plot', methods=['POST'])
 def plot_data():

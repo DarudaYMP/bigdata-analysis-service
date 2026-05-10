@@ -33,6 +33,16 @@ function App() {
   const [previewData, setPreviewData] = useState([]);
   const [edaInsights, setEdaInsights] = useState([]);
 
+  const [availableSheets, setAvailableSheets] = useState([]);
+  const [selectedSheet, setSelectedSheet] = useState('');
+
+  const [showFullData, setShowFullData] = useState(false);
+  const [fullData, setFullData] = useState([]);
+  const [dataPage, setDataPage] = useState(1);
+  const [totalRows, setTotalRows] = useState(0);
+
+  const [helpView, setHelpView] = useState('root');
+
   const [uploading, setUploading] = useState(false);
   const [cleaning, setCleaning] = useState(false);
   const [plotting, setPlotting] = useState(false);
@@ -76,25 +86,46 @@ function App() {
 
     try {
       const response = await axios.post(`${API_URL}/upload`, formData);
-      setFileId(response.data.file_path);
-      setColumns(response.data.columns);
-      setTargetColumn(response.data.columns[0]);
-
-      setVisXCol(response.data.columns[0]);
-
-      setPreviewData(response.data.preview || []);
-      setEdaInsights(response.data.insights || []);
-
-      if (response.data.columns.length > 1) {
-        setSelectedFeatures(response.data.columns.slice(1));
+      if (response.data.needs_sheet_selection) {
+        setFileId(response.data.file_path);
+        setAvailableSheets(response.data.sheets);
+        setSelectedSheet(response.data.sheets[0]);
+      } else {
+        finishUpload(response.data);
       }
-
-      setCurrentStep('cleaning');
     } catch (err) {
       showError('Помилка завантаження файлу: ' + (err.response?.data?.error || err.message));
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleSheetSelection = async () => {
+    try {
+      setUploading(true);
+      const res = await axios.post(`${API_URL}/select_sheet`, { file_path: fileId, sheet_name: selectedSheet });
+      finishUpload(res.data);
+      setAvailableSheets([]);
+    } catch (err) {
+      showError('Помилка вибору листа: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const finishUpload = (data) => {
+    setFileId(data.file_path);
+    setColumns(data.columns);
+    setTargetColumn(data.columns[0]);
+    setVisXCol(data.columns[0]);
+    setPreviewData(data.preview || []);
+    setEdaInsights(data.insights || []);
+
+    if (data.columns.length > 1) {
+      setSelectedFeatures(data.columns.slice(1));
+    }
+
+    setCurrentStep('cleaning');
   };
 
   const handleCleaning = async (actionStr, extraPayload = {}) => {
@@ -124,6 +155,35 @@ function App() {
     } finally {
       setPlotting(false);
     }
+  };
+
+  const loadPage = async (page) => {
+    try {
+      const res = await axios.post(`${API_URL}/get_page`, { file_path: fileId, page, per_page: 50 });
+      setFullData(res.data.data);
+      setTotalRows(res.data.total_rows);
+      setDataPage(page);
+    } catch (err) {
+      showError('Помилка завантаження даних.');
+    }
+  };
+
+  const handleCellEdit = async (rowIndex, col, newValue) => {
+    try {
+      const absoluteIndex = (dataPage - 1) * 50 + rowIndex;
+      await axios.post(`${API_URL}/update_cell`, { file_path: fileId, row_index: absoluteIndex, column: col, value: newValue });
+      
+      const newData = [...fullData];
+      newData[rowIndex][col] = newValue;
+      setFullData(newData);
+    } catch (err) {
+      showError('Помилка оновлення клітинки: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  const handleShowFullData = () => {
+    setShowFullData(true);
+    loadPage(1);
   };
 
   const runAnalysis = async () => {
@@ -157,19 +217,65 @@ function App() {
     if (previewData.length === 0) return null;
     return (
       <div className="panel" style={{ marginTop: 0, overflowX: 'auto' }}>
-        <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}><Database size={20} /> Попередній перегляд даних (перші 10 рядків)</h2>
-        <div className="table-responsive">
-          <table className="data-table">
-            <thead>
-              <tr>{columns.map(col => <th key={col}>{col}</th>)}</tr>
-            </thead>
-            <tbody>
-              {previewData.map((row, idx) => (
-                <tr key={idx}>{columns.map(col => <td key={col}>{row[col]}</td>)}</tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span><Database size={20} /> Структура даних</span>
+          {!showFullData && <button className="btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.75rem' }} onClick={handleShowFullData}>Показати всі дані</button>}
+        </h2>
+        
+        {!showFullData ? (
+          <div className="table-responsive">
+            <table className="data-table">
+              <thead>
+                <tr>{columns.map(col => <th key={col}>{col}</th>)}</tr>
+              </thead>
+              <tbody>
+                {previewData.map((row, idx) => (
+                  <tr key={idx}>{columns.map(col => <td key={col}>{row[col]}</td>)}</tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="table-responsive" style={{ maxHeight: '600px', overflowY: 'auto' }}>
+            <table className="data-table">
+              <thead>
+                <tr>{columns.map(col => <th key={col}>{col}</th>)}</tr>
+              </thead>
+              <tbody>
+                {fullData.map((row, rowIndex) => (
+                  <tr key={rowIndex}>
+                    {columns.map(col => (
+                      <td key={col} style={{ padding: 0 }}>
+                        <input 
+                          type="text" 
+                          defaultValue={row[col]} 
+                          onBlur={(e) => {
+                            if (e.target.value !== String(row[col])) {
+                              handleCellEdit(rowIndex, col, e.target.value);
+                            }
+                          }}
+                          style={{
+                            width: '100%', border: 'none', background: 'transparent', padding: '0.75rem 1rem',
+                            color: 'var(--text-main)', fontSize: '0.85rem', outline: 'none'
+                          }}
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Всього рядків: {totalRows}</div>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <button className="btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.75rem' }} disabled={dataPage === 1} onClick={() => loadPage(dataPage - 1)}>Попередня</button>
+                <span style={{ fontSize: '0.85rem' }}>Сторінка {dataPage}</span>
+                <button className="btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.75rem' }} disabled={dataPage * 50 >= totalRows} onClick={() => loadPage(dataPage + 1)}>Наступна</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -265,10 +371,25 @@ function App() {
               <div className="hero-icon"><Upload size={32} /></div>
               <h2>Зручний аналіз даних <br />починається тут.</h2>
               <p>Алгоритми кластеризації, зокрема K-Means та DBSCAN, дозволяють знаходити приховані закономірності та сегментувати інформацію, а моделі класифікації, такі як метод опорних векторів (SVM) та випадковий ліс (Random Forest), – швидко розподіляти нові вхідні дані за визначеними категоріями.</p>
-              <button className="btn-primary" onClick={() => fileInputRef.current.click()} disabled={uploading}>
-                {uploading ? 'ЗАВАНТАЖЕННЯ...' : 'ЗАВАНТАЖИТИ ДАНІ (CSV/JSON/XLSX/PARQUET/AVRO)'} <ChevronRight size={18} />
-              </button>
-              <input type="file" accept=".csv,.json,.xlsx,.parquet,.avro" className="hidden-file-input" ref={fileInputRef} onChange={handleFileUpload} />
+              
+              {availableSheets.length > 0 ? (
+                <div className="panel" style={{ padding: '2rem', marginTop: '1rem', background: 'var(--bg-main)' }}>
+                  <h3 style={{ marginBottom: '1rem' }}>Оберіть таблицю / лист:</h3>
+                  <select className="form-control" value={selectedSheet} onChange={e => setSelectedSheet(e.target.value)} style={{ marginBottom: '1rem' }}>
+                    {availableSheets.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                  <button className="btn-primary" onClick={handleSheetSelection} disabled={uploading}>
+                    {uploading ? 'ЗАВАНТАЖЕННЯ...' : 'ПІДТВЕРДИТИ'} <ChevronRight size={18} />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <button className="btn-primary" onClick={() => fileInputRef.current.click()} disabled={uploading}>
+                    {uploading ? 'ЗАВАНТАЖЕННЯ...' : 'ЗАВАНТАЖИТИ ДАНІ (CSV/JSON/XLSX/PARQUET/AVRO)'} <ChevronRight size={18} />
+                  </button>
+                  <input type="file" accept=".csv,.json,.xlsx,.parquet,.avro" className="hidden-file-input" ref={fileInputRef} onChange={handleFileUpload} />
+                </>
+              )}
             </div>
           </>
         );
@@ -482,7 +603,16 @@ function App() {
                   </div>
                   <div className="text-content-box" style={{ background: 'var(--bg-main)', padding: '1.5rem', borderRadius: '8px' }}>
                     <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Sparkles size={18} color="var(--accent)" /> Бізнес-рекомендації ШІ</h3>
-                    <ul style={{ paddingLeft: '1.5rem' }}>{results.recommendations.map((r, i) => <li key={i} style={{ marginBottom: '0.5rem' }}>{r}</li>)}</ul>
+                    <ul style={{ paddingLeft: '1.5rem', listStyleType: 'disc' }}>{results.recommendations.map((r, i) => <li key={i} style={{ marginBottom: '0.5rem' }}>{r}</li>)}</ul>
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem', flexWrap: 'wrap' }}>
+                    <button className="btn-primary" onClick={() => window.open(`${API_URL}/download?file_path=${encodeURIComponent(fileId)}`)}>
+                      Завантажити оброблені дані
+                    </button>
+                    <button className="btn-primary" onClick={() => window.print()}>
+                      Завантажити звіт (PDF)
+                    </button>
                   </div>
                 </div>
               )}
@@ -491,41 +621,100 @@ function App() {
         );
 
       case 'help':
-        return (
-          <div className="panel" style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'left', marginTop: 0 }}>
-            <h2 style={{ fontSize: '2rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}><HelpCircle size={28} color="var(--accent)" /> База Знань</h2>
-
-            <h3 style={{ fontSize: '1.25rem', color: 'var(--accent)', marginBottom: '0.5rem' }}>Що таке Кластеризація?</h3>
-            <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
-              Кластеризація (Clustering) — це метод машинного навчання <b>без учителя</b>, завданням якого є поділ набору даних на групи (кластери) таким чином, щоб об'єкти в одній групі були максимально схожі між собою, а об'єкти з різних груп — відрізнялися.
-            </p>
-
-            <h4 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>K-Means (k-середніх)</h4>
-            <p style={{ marginBottom: '1rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
-              Алгоритм K-Means намагається мінімізувати сумарне квадратичне відхилення точок кластерів від центрів цих кластерів (центроїдів). Математично це виглядає як мінімізація інерції:
-            </p>
-            <div style={{ background: 'var(--bg-main)', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', overflowX: 'auto' }}>
-              <BlockMath math="J = \sum_{i=1}^{k} \sum_{x \in C_i} ||x - \mu_i||^2" />
+        if (helpView === 'root') {
+          return (
+            <div className="panel" style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'left', marginTop: 0 }}>
+              <h2 style={{ fontSize: '2rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}><HelpCircle size={28} color="var(--accent)" /> База Знань</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '2rem' }}>
+                <div className="feature-card" style={{ cursor: 'pointer', textAlign: 'center' }} onClick={() => setHelpView('clustering')}>
+                  <Activity size={48} color="var(--accent)" style={{ margin: '0 auto' }}/>
+                  <h3 style={{ fontSize: '1.5rem', marginTop: '1rem' }}>Кластеризація</h3>
+                  <p style={{ color: 'var(--text-muted)' }}>Grouping similar objects together without predefined labels. Used for data segmentation.</p>
+                </div>
+                <div className="feature-card" style={{ cursor: 'pointer', textAlign: 'center' }} onClick={() => setHelpView('classification')}>
+                  <Zap size={48} color="var(--accent)" style={{ margin: '0 auto' }}/>
+                  <h3 style={{ fontSize: '1.5rem', marginTop: '1rem' }}>Класифікація</h3>
+                  <p style={{ color: 'var(--text-muted)' }}>Assigning categories to new objects based on trained data. Used for prediction.</p>
+                </div>
+              </div>
             </div>
-            <p style={{ margin: '1rem 0 2rem 0', color: 'var(--text-muted)', lineHeight: '1.6' }}>
-              де <InlineMath math="k" /> — кількість кластерів, <InlineMath math="C_i" /> — множина точок <InlineMath math="i" />-го кластеру, а <InlineMath math="\mu_i" /> — центроїд цього кластеру. Центроїди на графіках позначаються великими хрестиками.
-            </p>
-
-            <h4 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>DBSCAN</h4>
-            <p style={{ marginBottom: '2.5rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
-              DBSCAN (Density-Based Spatial Clustering of Applications with Noise) групує точки, які знаходяться щільно одна біля одної, і позначає точки в регіонах з низькою щільністю як шум (викиди).
-            </p>
-
-            <h3 style={{ fontSize: '1.25rem', color: 'var(--accent)', marginBottom: '0.5rem' }}>Що таке Класифікація?</h3>
-            <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
-              Класифікація — це задача навчання <b>з учителем</b>, коли алгоритм вчиться визначати категорію (клас) нових спостережень на основі тренувальних даних, які вже містять правильні відповіді (розмічені теги).
-            </p>
-            <h4 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>Випадковий ліс (Random Forest)</h4>
-            <p style={{ marginBottom: '1rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
-              Цей метод будує ансамбль з багатьох дерев рішень. Клас визначається шляхом "голосування" більшості дерев. Це дозволяє уникнути перенавчання (overfitting) та підвищує загальну точність.
-            </p>
-          </div>
-        );
+          );
+        } else if (helpView === 'clustering') {
+          return (
+            <div className="panel" style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'left', marginTop: 0 }}>
+              <button className="btn-primary" style={{ marginBottom: '1rem', padding: '0.5rem 1rem', fontSize: '0.75rem' }} onClick={() => setHelpView('root')}>Назад</button>
+              <h2 style={{ fontSize: '2rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}><Activity size={28} color="var(--accent)" /> Кластеризація</h2>
+              <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
+                Кластеризація — це метод машинного навчання без учителя, завданням якого є поділ набору даних на групи таким чином, щоб об'єкти в одній групі були максимально схожі між собою, а з різних груп — відрізнялися.
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="feature-card" style={{ cursor: 'pointer' }} onClick={() => setHelpView('kmeans')}>
+                  <h4 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>K-Means</h4>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Шукає центроїди та групує дані на основі відстані до них.</p>
+                </div>
+                <div className="feature-card" style={{ cursor: 'pointer' }} onClick={() => setHelpView('dbscan')}>
+                  <h4 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>DBSCAN</h4>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Групує щільно розташовані точки та ігнорує розсіяний шум.</p>
+                </div>
+              </div>
+            </div>
+          );
+        } else if (helpView === 'classification') {
+          return (
+            <div className="panel" style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'left', marginTop: 0 }}>
+              <button className="btn-primary" style={{ marginBottom: '1rem', padding: '0.5rem 1rem', fontSize: '0.75rem' }} onClick={() => setHelpView('root')}>Назад</button>
+              <h2 style={{ fontSize: '2rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}><Zap size={28} color="var(--accent)" /> Класифікація</h2>
+              <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
+                Класифікація — це задача навчання з учителем, коли алгоритм вчиться визначати категорію нових спостережень на основі тренувальних даних з мітками.
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                <div className="feature-card" style={{ cursor: 'pointer' }} onClick={() => setHelpView('rf')}>
+                  <h4 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>Випадковий ліс</h4>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Ансамбль дерев рішень для високої точності.</p>
+                </div>
+                <div className="feature-card" style={{ cursor: 'pointer' }} onClick={() => setHelpView('svm')}>
+                  <h4 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>SVM</h4>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Пошук оптимальної гіперплощини між класами.</p>
+                </div>
+                <div className="feature-card" style={{ cursor: 'pointer' }} onClick={() => setHelpView('lr')}>
+                  <h4 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>Логістична регресія</h4>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Оцінка ймовірності належності до класу.</p>
+                </div>
+              </div>
+            </div>
+          );
+        } else {
+          // Method detail view
+          const details = {
+            'kmeans': { title: 'K-Means (k-середніх)', desc: 'Мінімізує сумарне квадратичне відхилення точок кластерів від їх центроїдів. Ефективний для сферичних кластерів.' },
+            'dbscan': { title: 'DBSCAN', desc: 'Групує точки з високою щільністю, позначаючи ізольовані точки як шум (викиди).' },
+            'rf': { title: 'Випадковий ліс (Random Forest)', desc: 'Використовує багато дерев рішень та усереднює їх результат, що зменшує ризик перенавчання.' },
+            'svm': { title: 'Метод опорних векторів (SVM)', desc: 'Перетворює дані у багатовимірний простір для знаходження площини, яка найкраще розділяє класи.' },
+            'lr': { title: 'Логістична регресія', desc: 'Лінійна модель, що використовує логістичну функцію для передбачення ймовірності бінарних або мультикласових результатів.' }
+          };
+          const item = details[helpView];
+          
+          // Generate a static preview chart
+          const mockData = Array.from({length: 50}, (_, i) => ({ x: Math.random() * 100, y: Math.random() * 100, cluster: i % 3 }));
+          
+          return (
+            <div className="panel" style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'left', marginTop: 0 }}>
+              <button className="btn-primary" style={{ marginBottom: '1rem', padding: '0.5rem 1rem', fontSize: '0.75rem' }} onClick={() => setHelpView(helpView === 'kmeans' || helpView === 'dbscan' ? 'clustering' : 'classification')}>Назад</button>
+              <h2 style={{ fontSize: '2rem', marginBottom: '1.5rem' }}>{item.title}</h2>
+              <p style={{ marginBottom: '2rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>{item.desc}</p>
+              <div style={{ height: '300px', background: 'var(--bg-main)', borderRadius: '8px', padding: '1rem' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} vertical={false} stroke="var(--border-color)" />
+                    <XAxis type="number" dataKey="x" stroke="var(--border-color)" tick={false} />
+                    <YAxis type="number" dataKey="y" stroke="var(--border-color)" tick={false} />
+                    <Scatter name="Points" data={mockData} fill="var(--accent)" />
+                  </ScatterChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          );
+        }
     }
   };
 
