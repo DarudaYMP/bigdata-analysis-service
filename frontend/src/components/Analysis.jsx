@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import Plot from 'react-plotly.js';
+import Plotly from 'plotly.js-dist-min';
+import createPlotlyComponent from 'react-plotly.js/factory';
+const Plot = createPlotlyComponent(Plotly);
 import { Sparkles, Brain, Cpu } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import PropTypes from 'prop-types';
