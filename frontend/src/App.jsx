@@ -277,7 +277,7 @@ function App() {
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', width: '100%', maxWidth: '1000px' }}>
             <div className="panel" style={{ marginTop: 0 }}>
-              <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}><Filter size={20} /> Очищення даних (Data Wrangling)</h2>
+              <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}><Filter size={20} /> Очищення даних</h2>
               <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>Нормалізуйте сирі дані перед візуалізацією або моделюванням.</p>
 
               <div className="feature-cards">
@@ -285,7 +285,7 @@ function App() {
                   <Trash2 size={24} color="var(--accent)" />
                   <h3>Видалити дублікати</h3>
                   <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', flex: 1 }}>Знайти та видалити ідентичні рядки. Оберіть стовпці (порожньо = весь рядок):</p>
-                  
+
                   <div className="checkbox-grid" style={{ gridTemplateColumns: '1fr', maxHeight: '120px', overflowY: 'auto', padding: '0.5rem', background: 'var(--bg-main)', borderRadius: '6px', marginBottom: '0.5rem' }}>
                     {columns.map(col => (
                       <label key={col} className="checkbox-item" style={{ marginBottom: '0.25rem', padding: '0.35rem', fontSize: '0.75rem' }}>
@@ -333,7 +333,7 @@ function App() {
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', width: '100%', maxWidth: '1000px' }}>
             <div className="panel" style={{ marginTop: 0 }}>
-              <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}><Sparkles size={20} /> Візуальний редактор (Graph Builder)</h2>
+              <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}><Sparkles size={20} /> Візуальний редактор</h2>
               <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>Побудуйте інтерактивні графіки для аналізу вручну.</p>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
@@ -400,9 +400,9 @@ function App() {
                 <select className="form-control" value={algorithm} onChange={(e) => { setAlgorithm(e.target.value); setResults(null); }}>
                   {analysisType === 'classification' ? (
                     <>
-                      <option value="rf">Випадковий ліс (Random Forest)</option>
-                      <option value="lr">Логістична регресія (Logistic Regression)</option>
-                      <option value="svm">Метод опорних векторів (SVM)</option>
+                      <option value="rf">Випадковий ліс</option>
+                      <option value="lr">Логістична регресія </option>
+                      <option value="svm">Метод опорних векторів</option>
                     </>
                   ) : (
                     <>
@@ -493,13 +493,13 @@ function App() {
       case 'help':
         return (
           <div className="panel" style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'left', marginTop: 0 }}>
-            <h2 style={{ fontSize: '2rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}><HelpCircle size={28} color="var(--accent)" /> База Знань (Knowledge Base)</h2>
-            
+            <h2 style={{ fontSize: '2rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}><HelpCircle size={28} color="var(--accent)" /> База Знань</h2>
+
             <h3 style={{ fontSize: '1.25rem', color: 'var(--accent)', marginBottom: '0.5rem' }}>Що таке Кластеризація?</h3>
             <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
               Кластеризація (Clustering) — це метод машинного навчання <b>без учителя</b>, завданням якого є поділ набору даних на групи (кластери) таким чином, щоб об'єкти в одній групі були максимально схожі між собою, а об'єкти з різних груп — відрізнялися.
             </p>
-            
+
             <h4 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>K-Means (k-середніх)</h4>
             <p style={{ marginBottom: '1rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
               Алгоритм K-Means намагається мінімізувати сумарне квадратичне відхилення точок кластерів від центрів цих кластерів (центроїдів). Математично це виглядає як мінімізація інерції:
