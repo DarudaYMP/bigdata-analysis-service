@@ -39,19 +39,20 @@ def generate_plot_data(df: pd.DataFrame, x_col: str, y_col: str, chart_type: str
                 
             grouped = grouped.sort_values(by=y_col, ascending=False).head(50)
             for _, row in grouped.iterrows():
-                chart_data.append({'x': str(row[x_col]), 'y': row[y_col]})
+                chart_data.append({'x': str(row[x_col]), 'y': float(row[y_col])})
         else:
             grouped = df[x_col].value_counts().reset_index()
             grouped.columns = [x_col, 'count']
             grouped = grouped.head(50)
             for _, row in grouped.iterrows():
-                chart_data.append({'x': str(row[x_col]), 'y': row['count']})
+                chart_data.append({'x': str(row[x_col]), 'y': int(row['count'])})
                 
     elif chart_type == 'scatter':
         if y_col:
             sampled = df.dropna(subset=[x_col, y_col]).sample(n=min(1000, len(df)))
             for _, row in sampled.iterrows():
-                chart_data.append({'x': row[x_col], 'y': row[y_col]})
+                chart_data.append({'x': float(row[x_col]) if pd.api.types.is_numeric_dtype(df[x_col]) else str(row[x_col]), 
+                                   'y': float(row[y_col]) if pd.api.types.is_numeric_dtype(df[y_col]) else str(row[y_col])})
         else:
             raise ValueError('Scatter requires a Y column.')
             
