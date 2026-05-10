@@ -1,16 +1,19 @@
 import os
 import uuid
+import traceback
 import pandas as pd
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
-from ml_engine.classifier import run_classification
-from ml_engine.clusterer import run_clustering
-from ml_engine.analyzer import generate_classification_summary, generate_clustering_summary
+# Local modules
+from utils import get_supported_extensions, load_df, save_df
+from data_processing import clean_dataframe, impute_missing_values, generate_eda_insights
+from visualizations import generate_plot_data
+from ml_engine import run_classification, run_clustering, generate_classification_summary, generate_clustering_summary
 
 app = Flask(__name__, static_folder='static', static_url_path='/')
-CORS(app)  # Enable CORS for React frontend connecting to this API
+CORS(app)
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500 MB max
 
@@ -18,13 +21,14 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
+    """Handle file uploads and return initial insights."""
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
     file = request.files['file']
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
         
-    supported_extensions = ('.csv', '.xlsx', '.json', '.parquet', '.avro')
+    supported_extensions = get_supported_extensions()
     if file and file.filename.endswith(supported_extensions):
         filename = secure_filename(file.filename)
         unique_id = str(uuid.uuid4())
@@ -32,10 +36,7 @@ def upload_file():
         file.save(save_path)
         
         try:
-            df = None
-            if save_path.endswith('.csv'):
-                df = pd.read_csv(save_path, sep=None, engine='python', on_bad_lines='skip')
-            elif save_path.endswith('.xlsx'):
+            if save_path.endswith('.xlsx'):
                 xls = pd.ExcelFile(save_path)
                 if len(xls.sheet_names) > 1:
                     return jsonify({
@@ -43,22 +44,13 @@ def upload_file():
                         'needs_sheet_selection': True,
                         'sheets': xls.sheet_names
                     })
-                df = pd.read_excel(save_path)
-            elif save_path.endswith('.json'):
-                df = pd.read_json(save_path)
-            elif save_path.endswith('.parquet'):
-                df = pd.read_parquet(save_path)
-            elif save_path.endswith('.avro'):
-                import pandavro as pdx
-                df = pdx.read_avro(save_path)
-                
+            
+            df = load_df(save_path)
             if df is None:
                 return jsonify({'error': 'Failed to parse file: unsupported format'}), 400
                 
             columns = df.columns.tolist()
             preview_data = df.head(10).fillna("").to_dict(orient="records")
-            
-            from ml_engine.analyzer import generate_eda_insights
             eda_insights = generate_eda_insights(df)
             
             return jsonify({
@@ -72,89 +64,23 @@ def upload_file():
             
     return jsonify({'error': 'Unsupported file format'}), 400
 
-@app.route('/clean', methods=['POST'])
-def clean_data():
-    data = request.json
-    file_path = data.get('file_path')
-    action = data.get('action') # 'drop_duplicates', 'drop_nulls', 'lower_text'
-    subset = data.get('subset', [])
-    
-    if not file_path or not os.path.exists(file_path):
-        return jsonify({'error': 'File not found'}), 404
-        
-    try:
-        from ml_engine.analyzer import load_and_clean_dataframe
-        # Since load_and_clean already imputes nulls, we should load it raw first if we want strict drop_nulls
-        # But for simplicity, let's load it through pd directly to apply explicit dropping logic
-        if file_path.endswith('.csv'): df = pd.read_csv(file_path, sep=None, engine='python', on_bad_lines='skip')
-        elif file_path.endswith('.xlsx'): df = pd.read_excel(file_path)
-        elif file_path.endswith('.json'): df = pd.read_json(file_path)
-        elif file_path.endswith('.parquet'): df = pd.read_parquet(file_path)
-        elif file_path.endswith('.avro'): 
-            import pandavro as pdx
-            df = pdx.read_avro(file_path)
-        else:
-            return jsonify({'error': 'Unsupported file format'}), 400
-            
-        if action == 'drop_duplicates':
-            if subset and len(subset) > 0:
-                df = df.drop_duplicates(subset=subset)
-            else:
-                df = df.drop_duplicates()
-        elif action == 'drop_nulls':
-            df = df.dropna()
-        elif action == 'lower_text':
-            categorical_cols = df.select_dtypes(include=['object', 'category']).columns
-            for col in categorical_cols:
-                df[col] = df[col].astype(str).str.lower()
-                
-        # Save back to file to persist changes across steps
-        if file_path.endswith('.csv'): df.to_csv(file_path, index=False)
-        elif file_path.endswith('.xlsx'): df.to_excel(file_path, index=False)
-        elif file_path.endswith('.json'): df.to_json(file_path, orient='records')
-        elif file_path.endswith('.parquet'): df.to_parquet(file_path, index=False)
-        elif file_path.endswith('.avro'): pdx.to_avro(file_path, df)
-        
-        columns = df.columns.tolist()
-        preview_data = df.head(10).fillna("").to_dict(orient="records")
-        
-        from ml_engine.analyzer import generate_eda_insights
-        eda_insights = generate_eda_insights(df)
-        
-        return jsonify({
-            'success': True,
-            'preview': preview_data,
-            'insights': eda_insights,
-            'columns': columns
-        })
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': f'Failed to clean data: {str(e)}'}), 500
-
-def _load_df(file_path, sheet_name=None):
-    if file_path.endswith('.csv'): return pd.read_csv(file_path, sep=None, engine='python', on_bad_lines='skip')
-    elif file_path.endswith('.xlsx'): return pd.read_excel(file_path, sheet_name=sheet_name or 0)
-    elif file_path.endswith('.json'): return pd.read_json(file_path)
-    elif file_path.endswith('.parquet'): return pd.read_parquet(file_path)
-    elif file_path.endswith('.avro'): 
-        import pandavro as pdx
-        return pdx.read_avro(file_path)
-    return None
-
 @app.route('/select_sheet', methods=['POST'])
 def select_sheet():
+    """Handle sheet selection for multi-sheet Excel files."""
     data = request.json
     save_path = data.get('file_path')
     sheet_name = data.get('sheet_name')
     if not save_path or not sheet_name:
         return jsonify({'error': 'Missing file_path or sheet_name'}), 400
     try:
-        df = pd.read_excel(save_path, sheet_name=sheet_name)
+        df = load_df(save_path, sheet_name=sheet_name)
+        if df is None:
+            return jsonify({'error': 'Failed to load sheet'}), 400
+            
         columns = df.columns.tolist()
         preview_data = df.head(10).fillna("").to_dict(orient="records")
-        from ml_engine.analyzer import generate_eda_insights
         eda_insights = generate_eda_insights(df)
+        
         return jsonify({
             'file_path': save_path, 
             'columns': columns,
@@ -164,25 +90,64 @@ def select_sheet():
     except Exception as e:
         return jsonify({'error': f'Failed to process sheet: {str(e)}'}), 500
 
+@app.route('/clean', methods=['POST'])
+def clean_data():
+    """Clean dataset based on requested action."""
+    data = request.json
+    file_path = data.get('file_path')
+    action = data.get('action')
+    subset = data.get('subset', [])
+    
+    if not file_path or not os.path.exists(file_path):
+        return jsonify({'error': 'File not found'}), 404
+        
+    try:
+        df = load_df(file_path)
+        if df is None:
+            return jsonify({'error': 'Unsupported file format'}), 400
+            
+        df = clean_dataframe(df, action, subset)
+        
+        save_df(df, file_path)
+        
+        columns = df.columns.tolist()
+        preview_data = df.head(10).fillna("").to_dict(orient="records")
+        eda_insights = generate_eda_insights(df)
+        
+        return jsonify({
+            'success': True,
+            'preview': preview_data,
+            'insights': eda_insights,
+            'columns': columns
+        })
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'error': f'Failed to clean data: {str(e)}'}), 500
+
 @app.route('/get_page', methods=['POST'])
 def get_page():
+    """Get paginated data for full dataset view."""
     data = request.json
     file_path = data.get('file_path')
     page = int(data.get('page', 1))
     per_page = int(data.get('per_page', 50))
     try:
-        df = _load_df(file_path)
-        if df is None: return jsonify({'error': 'Invalid file'}), 400
+        df = load_df(file_path)
+        if df is None:
+            return jsonify({'error': 'Invalid file'}), 400
+            
         total_rows = len(df)
         start_idx = (page - 1) * per_page
         end_idx = start_idx + per_page
         page_data = df.iloc[start_idx:end_idx].fillna("").to_dict(orient="records")
+        
         return jsonify({'data': page_data, 'total_rows': total_rows})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 @app.route('/update_cell', methods=['POST'])
 def update_cell():
+    """Update a specific cell in the dataset."""
     data = request.json
     file_path = data.get('file_path')
     row_index = int(data.get('row_index'))
@@ -190,10 +155,10 @@ def update_cell():
     new_value = data.get('value')
     
     try:
-        df = _load_df(file_path)
-        if df is None: return jsonify({'error': 'Invalid file'}), 400
+        df = load_df(file_path)
+        if df is None:
+            return jsonify({'error': 'Invalid file'}), 400
         
-        # Check if column is numeric, try casting new_value
         if pd.api.types.is_numeric_dtype(df[column]):
             try:
                 new_value = float(new_value)
@@ -201,102 +166,48 @@ def update_cell():
                 return jsonify({'error': 'Invalid numeric value'}), 400
                 
         df.at[row_index, column] = new_value
-        
-        # Save back
-        if file_path.endswith('.csv'): df.to_csv(file_path, index=False)
-        elif file_path.endswith('.xlsx'): df.to_excel(file_path, index=False)
-        elif file_path.endswith('.json'): df.to_json(file_path, orient='records')
-        elif file_path.endswith('.parquet'): df.to_parquet(file_path, index=False)
-        elif file_path.endswith('.avro'): 
-            import pandavro as pdx
-            pdx.to_avro(file_path, df)
-            
+        save_df(df, file_path)
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 @app.route('/download', methods=['GET'])
 def download_file():
+    """Download the processed dataset."""
     file_path = request.args.get('file_path')
     if not file_path or not os.path.exists(file_path):
         return jsonify({'error': 'File not found'}), 404
-    from flask import send_file
     return send_file(file_path, as_attachment=True)
 
 @app.route('/plot', methods=['POST'])
 def plot_data():
+    """Generate plotting data."""
     data = request.json
     file_path = data.get('file_path')
     x_col = data.get('x_col')
     y_col = data.get('y_col')
-    chart_type = data.get('chart_type') # 'bar', 'line', 'scatter'
+    chart_type = data.get('chart_type')
     
     if not file_path or not os.path.exists(file_path):
         return jsonify({'error': 'File not found'}), 404
         
     try:
-        if file_path.endswith('.csv'): df = pd.read_csv(file_path, sep=None, engine='python', on_bad_lines='skip')
-        elif file_path.endswith('.xlsx'): df = pd.read_excel(file_path)
-        elif file_path.endswith('.json'): df = pd.read_json(file_path)
-        elif file_path.endswith('.parquet'): df = pd.read_parquet(file_path)
-        elif file_path.endswith('.avro'): 
-            import pandavro as pdx
-            df = pdx.read_avro(file_path)
-        else:
+        df = load_df(file_path)
+        if df is None:
             return jsonify({'error': 'Unsupported file format'}), 400
             
-        chart_data = []
-        
-        # We aggregate for bar and line to save frontend performance
-        if chart_type in ['bar', 'line']:
-            if chart_type == 'bar':
-                unique_count = df[x_col].nunique()
-                total_count = len(df[x_col].dropna())
-                if total_count > 10 and unique_count >= total_count * 0.95:
-                    return jsonify({'error': 'Цей стовпець містить унікальні ID і не підходить для даного типу графіка.'}), 400
-
-            if y_col:
-                # Group by X
-                if pd.api.types.is_numeric_dtype(df[y_col]):
-                    grouped = df.groupby(x_col)[y_col].mean().reset_index()
-                else:
-                    grouped = df.groupby(x_col).size().reset_index(name=y_col)
-                    
-                # Limit to top 50 strictly for performance
-                grouped = grouped.sort_values(by=y_col, ascending=False).head(50)
-                for _, row in grouped.iterrows():
-                    chart_data.append({'x': str(row[x_col]), 'y': row[y_col]})
-            else:
-                # Group by X and Count frequency
-                grouped = df[x_col].value_counts().reset_index()
-                grouped.columns = [x_col, 'count']
-                grouped = grouped.head(50)
-                for _, row in grouped.iterrows():
-                    chart_data.append({'x': str(row[x_col]), 'y': row['count']})
-                    
-        elif chart_type == 'scatter':
-            if y_col:
-                # To prevent React crash, sample up to 1000 points
-                sampled = df.dropna(subset=[x_col, y_col]).sample(n=min(1000, len(df)))
-                for _, row in sampled.iterrows():
-                    chart_data.append({'x': row[x_col], 'y': row[y_col]})
-            else:
-                return jsonify({'error': 'Scatter requires a Y column.'}), 400
-                
-        return jsonify({
-            'success': True,
-            'chartData': chart_data
-        })
+        chart_data = generate_plot_data(df, x_col, y_col, chart_type)
+        return jsonify({'success': True, 'chartData': chart_data})
     except Exception as e:
-        import traceback
         traceback.print_exc()
         return jsonify({'error': f'Failed to generate plot: {str(e)}'}), 500
 
 @app.route('/analyze', methods=['POST'])
 def analyze_data():
+    """Run ML analysis on the dataset."""
     data = request.json
     file_path = data.get('file_path')
-    analysis_type = data.get('analysis_type')  # 'classification' or 'clustering'
+    analysis_type = data.get('analysis_type')
     algorithm = data.get('algorithm')
     features = data.get('features', [])
     target = data.get('target')
@@ -308,18 +219,16 @@ def analyze_data():
         return jsonify({'error': 'No features selected'}), 400
         
     try:
-        from ml_engine.analyzer import load_and_clean_dataframe
-        df = load_and_clean_dataframe(file_path)
+        df = load_df(file_path)
+        df = impute_missing_values(df)
         
         if analysis_type == 'classification':
             if not target:
-                return jsonify({'error': 'No target selected for classification'}), 400
+                return jsonify({'error': 'No target selected'}), 400
             
             results = run_classification(df, target, features, algorithm)
             summary, recs = generate_classification_summary(results['accuracy'], results['f1_score'], algorithm)
             
-            # Formulating chart data for frontend (Recharts)
-            # Send sample predictions for pie charts or bar charts
             prediction_counts = results['sample_data']['prediction'].value_counts().to_dict()
             chart_data = [{"name": str(k), "value": int(v)} for k, v in prediction_counts.items()]
             
@@ -330,7 +239,7 @@ def analyze_data():
                 },
                 'summary': summary,
                 'recommendations': recs,
-                'chartType': 'pie', # For frontend rendering logic
+                'chartType': 'pie',
                 'chartData': chart_data
             })
             
@@ -339,9 +248,7 @@ def analyze_data():
             results = run_clustering(df, features, k, algorithm)
             summary, recs = generate_clustering_summary(results['silhouette_score'], results['k'], algorithm)
             
-            # Formulate Scatter Plot data
             sample_df = results['sample_data']
-            
             chart_data = []
             for idx, row in sample_df.iterrows():
                 chart_data.append({
@@ -371,22 +278,19 @@ def analyze_data():
                 'chartData': chart_data,
                 'axisLabels': {'x': 'Principal Component 1', 'y': 'Principal Component 2'}
             })
-            
         else:
             return jsonify({'error': 'Invalid analysis type'}), 400
             
     except Exception as e:
-        import traceback
         traceback.print_exc()
         return jsonify({'error': f'Analysis failed: {str(e)}'}), 500
 
 @app.route('/')
 def serve_frontend():
     return app.send_static_file('index.html')
+
 @app.route('/<path:path>')
 def static_proxy(path):
-    # Serve files from static directory, fallback to index.html for React Router
-    import os
     if os.path.exists(os.path.join(app.root_path, 'static', path)):
         return app.send_static_file(path)
     return app.send_static_file('index.html')
