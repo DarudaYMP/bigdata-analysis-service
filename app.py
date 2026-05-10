@@ -2,6 +2,7 @@ import os
 import uuid
 import traceback
 import pandas as pd
+pd.set_option('future.no_silent_downcasting', True)
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
@@ -77,6 +78,9 @@ def select_sheet():
         if df is None:
             return jsonify({'error': 'Failed to load sheet'}), 400
             
+        # Overwrite the file with the selected sheet so subsequent requests use correct data
+        save_df(df, save_path)
+        
         columns = df.columns.tolist()
         preview_data = df.head(10).fillna("").to_dict(orient="records")
         eda_insights = generate_eda_insights(df)

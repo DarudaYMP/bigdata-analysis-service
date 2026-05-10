@@ -19,6 +19,11 @@ def generate_plot_data(df: pd.DataFrame, x_col: str, y_col: str, chart_type: str
     """
     chart_data = []
     
+    if x_col not in df.columns:
+        raise ValueError(f"Ознака '{x_col}' не знайдена у наборі даних.")
+    if y_col and y_col not in df.columns:
+        raise ValueError(f"Ознака '{y_col}' не знайдена у наборі даних.")
+    
     if chart_type in ['bar', 'line']:
         if chart_type == 'bar':
             unique_count = df[x_col].nunique()
