@@ -59,6 +59,9 @@ def run_classification(df: pd.DataFrame, target_col: str, feature_cols: List[str
     """
     df = df.dropna(subset=[target_col] + feature_cols).copy()
     
+    if len(df) < 10:
+        raise ValueError(f"Недостатньо валідних даних для тренування (залишилось {len(df)} рядків). Переконайтеся, що обрані колонки не є повністю порожніми.")
+        
     if pd.api.types.is_numeric_dtype(df[target_col]) and df[target_col].nunique() > 10:
         df[target_col] = pd.qcut(df[target_col], q=4, duplicates='drop').astype(str)
         
@@ -67,6 +70,9 @@ def run_classification(df: pd.DataFrame, target_col: str, feature_cols: List[str
     
     le = LabelEncoder()
     y_encoded = le.fit_transform(y)
+    
+    if len(le.classes_) < 2:
+        raise ValueError("Цільова змінна повинна мати щонайменше 2 унікальних класи для класифікації.")
     
     numeric_features = X.select_dtypes(include=['int64', 'float64']).columns.tolist()
     categorical_features = X.select_dtypes(include=['object', 'category']).columns.tolist()
@@ -124,6 +130,10 @@ def run_clustering(df: pd.DataFrame, feature_cols: List[str], k: int = 3, algori
         Dict[str, Any]: A dictionary containing silhouette_score, sample_data, centroids, and k.
     """
     df = df.dropna(subset=feature_cols)
+    
+    if len(df) < k:
+        raise ValueError(f"Недостатньо валідних даних для кластеризації. Залишилося {len(df)} рядків, але потрібно мінімум {k} (к-сть кластерів). Переконайтеся, що обрані колонки не є повністю порожніми.")
+        
     X = df[feature_cols]
     
     numeric_features = X.select_dtypes(include=['int64', 'float64']).columns.tolist()
