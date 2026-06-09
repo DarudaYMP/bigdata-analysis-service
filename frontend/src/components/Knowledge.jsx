@@ -24,26 +24,26 @@ const Knowledge = () => {
         return (
           <div>
             <p style={{ marginBottom: '1.5rem', lineHeight: '1.7', color: 'var(--text-main)' }}>
-              <strong>Метод K-Means (k-середніх)</strong> — це ітеративний алгоритм кластеризації без учителя, метою якого є поділ набору даних на <InlineMath math="K"/> попередньо заданих неперетинних підмножин (кластерів) <InlineMath math="S = \\{S_1, S_2, \\dots, S_K\\}"/>. Кожен об'єкт відноситься до кластера з найближчим середнім значенням.
+              <strong>Метод K-Means (k-середніх)</strong> — це ітеративний алгоритм кластеризації без учителя, метою якого є поділ набору даних на <InlineMath math={"K"} /> попередньо заданих неперетинних підмножин (кластерів) <InlineMath math={"S = \\{S_1, S_2, \\dots, S_K\\}"} />. Кожен об'єкт відноситься до кластера з найближчим середнім значенням.
             </p>
             <h4 style={{ fontSize: '1.2rem', margin: '1rem 0 0.5rem', color: 'var(--accent)' }}>Математична модель</h4>
             <p style={{ marginBottom: '1rem', lineHeight: '1.7' }}>
               Алгоритм мінімізує сумарне квадратичне відхилення точок кластерів від їх центроїдів (критерій внутрішньокластерної дисперсії):
             </p>
             <div style={{ margin: '1.5rem 0', padding: '1.25rem', background: 'var(--bg-main)', borderRadius: '8px', overflowX: 'auto' }}>
-              <BlockMath math="J = \\sum_{i=1}^{K} \\sum_{x \\in S_i} \\| x - \\mu_i \\|^2" />
+              <BlockMath math={"J = \\sum_{i=1}^{K} \\sum_{x \\in S_i} \\| x - \\mu_i \\|^2"} />
             </div>
             <p style={{ marginBottom: '1rem', lineHeight: '1.7' }}>
-              де <InlineMath math="\\mu_i"/> — центроїд кластера <InlineMath math="S_i"/>, який обчислюється як середнє арифметичне всіх точок кластера:
+              де <InlineMath math={"\\mu_i"} /> — центроїд кластера <InlineMath math={"S_i"} />, який обчислюється як середнє арифметичне всіх точок кластера:
             </p>
             <div style={{ margin: '1.5rem 0', padding: '1.25rem', background: 'var(--bg-main)', borderRadius: '8px', overflowX: 'auto' }}>
-              <BlockMath math="\\mu_i = \\frac{1}{|S_i|} \\sum_{x \\in S_i} x" />
+              <BlockMath math={"\\mu_i = \\frac{1}{|S_i|} \\sum_{x \\in S_i} x"} />
             </div>
             <h4 style={{ fontSize: '1.2rem', margin: '1rem 0 0.5rem', color: 'var(--accent)' }}>Ітераційний процес</h4>
             <ol style={{ paddingLeft: '1.5rem', lineHeight: '1.7', marginBottom: '1.5rem' }}>
-              <li style={{ marginBottom: '0.5rem' }}><strong>Ініціалізація</strong>: Випадковий вибір <InlineMath math="K"/> центроїдів.</li>
-              <li style={{ marginBottom: '0.5rem' }}><strong>Класифікація</strong>: Призначення кожного об'єкта до найближчого центроїда за евклідовою відстанню: <InlineMath math="d(x, y) = \\|x - y\\|_2"/>.</li>
-              <li style={{ marginBottom: '0.5rem' }}><strong>Оновлення</strong>: Перерахунок центроїдів <InlineMath math="\\mu_i"/> для кожної сформованої групи.</li>
+              <li style={{ marginBottom: '0.5rem' }}><strong>Ініціалізація</strong>: Випадковий вибір <InlineMath math={"K"} /> центроїдів.</li>
+              <li style={{ marginBottom: '0.5rem' }}><strong>Класифікація</strong>: Призначення кожного об'єкта до найближчого центроїда за евклідовою відстанню: <InlineMath math={"d(x, y) = \\|x - y\\|_2"} />.</li>
+              <li style={{ marginBottom: '0.5rem' }}><strong>Оновлення</strong>: Перерахунок центроїдів <InlineMath math={"\\mu_i"} /> для кожної сформованої групи.</li>
               <li style={{ marginBottom: '0.5rem' }}><strong>Критерій зупинки</strong>: Процес повторюється до повної стабілізації центроїдів або досягнення ліміту ітерацій.</li>
             </ol>
           </div>
@@ -56,19 +56,19 @@ const Knowledge = () => {
             </p>
             <h4 style={{ fontSize: '1.2rem', margin: '1rem 0 0.5rem', color: 'var(--accent)' }}>Математична модель</h4>
             <p style={{ marginBottom: '1rem', lineHeight: '1.7' }}>
-              Основна концепція базується на аналізі щільності точок у заданому радіусі <InlineMath math="\\epsilon"/>. Визначається <InlineMath math="\\epsilon"/>-окіл точки <InlineMath math="p"/> як:
+              Основна концепція базується на аналізі щільності точок у заданому радіусі <InlineMath math={"\\epsilon"} />. Визначається <InlineMath math={"\\epsilon"} />-окіл точки <InlineMath math={"p"} /> як:
             </p>
             <div style={{ margin: '1.5rem 0', padding: '1.25rem', background: 'var(--bg-main)', borderRadius: '8px', overflowX: 'auto' }}>
-              <BlockMath math="N_{\\epsilon}(p) = \\{q \\in D \\mid \\text{dist}(p, q) \\le \\epsilon\\}" />
+              <BlockMath math={"N_{\\epsilon}(p) = \\{q \\in D \\mid \\text{dist}(p, q) \\le \\epsilon\\}"} />
             </div>
             <p style={{ marginBottom: '1rem', lineHeight: '1.7' }}>
-              Точка <InlineMath math="p"/> позначається як ядрова (core point), якщо кількість сусідів у її околі є не меншою за поріг <InlineMath math="\\text{MinPts}"/>:
+              Точка <InlineMath math={"p"} /> позначається як ядрова (core point), якщо кількість сусідів у її околі є не меншою за поріг <InlineMath math={"\\text{MinPts}"} />:
             </p>
             <div style={{ margin: '1.5rem 0', padding: '1.25rem', background: 'var(--bg-main)', borderRadius: '8px', overflowX: 'auto' }}>
-              <BlockMath math="|N_{\\epsilon}(p)| \\ge \\text{MinPts}" />
+              <BlockMath math={"|N_{\\epsilon}(p)| \\ge \\text{MinPts}"} />
             </div>
             <p style={{ marginBottom: '1rem', lineHeight: '1.7' }}>
-              Точки діляться на 3 класи: <strong>ядрові</strong>, <strong>граничні</strong> (лежать у радіусі ядрової, але мають менше ніж <InlineMath math="\\text{MinPts}"/> власних сусідів) та <strong>шумові</strong> (ізольовані точки, що не входять в окіл жодної ядрової).
+              Точки діляться на 3 класи: <strong>ядрові</strong>, <strong>граничні</strong> (лежать у радіусі ядрової, але мають менше ніж <InlineMath math={"\\text{MinPts}"} /> власних сусідів) та <strong>шумові</strong> (ізольовані точки, що не входять в окіл жодної ядрової).
             </p>
           </div>
         );
@@ -83,19 +83,19 @@ const Knowledge = () => {
               Фінальний класифікатор визначається шляхом більшості голосів (majority vote) окремих дерев рішень:
             </p>
             <div style={{ margin: '1.5rem 0', padding: '1.25rem', background: 'var(--bg-main)', borderRadius: '8px', overflowX: 'auto' }}>
-              <BlockMath math="\\hat{y} = \\text{argmax}_{c \\in C} \\sum_{b=1}^{B} I(T_b(x) = c)" />
+              <BlockMath math={"\\hat{y} = \\text{argmax}_{c \\in C} \\sum_{b=1}^{B} I(T_b(x) = c)"} />
             </div>
             <p style={{ marginBottom: '1rem', lineHeight: '1.7' }}>
-              де <InlineMath math="B"/> — кількість дерев в ансамблі, <InlineMath math="T_b(x)"/> — вихідний клас з <InlineMath math="b"/>-го дерева, а <InlineMath math="I(\\cdot)"/> — індикаторна функція.
+              де <InlineMath math={"B"} /> — кількість дерев в ансамблі, <InlineMath math={"T_b(x)"} /> — вихідний клас з <InlineMath math={"b"} />-го дерева, а <InlineMath math={"I(\\cdot)"} /> — індикаторна функція.
             </p>
             <p style={{ marginBottom: '1rem', lineHeight: '1.7' }}>
               Для вибору оптимального розділення вузлів дерева використовується неоднорідність Джині (Gini Impurity):
             </p>
             <div style={{ margin: '1.5rem 0', padding: '1.25rem', background: 'var(--bg-main)', borderRadius: '8px', overflowX: 'auto' }}>
-              <BlockMath math="I_G(t) = 1 - \\sum_{i=1}^{C} p_i^2" />
+              <BlockMath math={"I_G(t) = 1 - \\sum_{i=1}^{C} p_i^2"} />
             </div>
             <p style={{ marginBottom: '1rem', lineHeight: '1.7' }}>
-              де <InlineMath math="p_i"/> — статистична ймовірність приналежності до класу <InlineMath math="i"/> у поточному вузлі <InlineMath math="t"/>.
+              де <InlineMath math={"p_i"} /> — статистична ймовірність приналежності до класу <InlineMath math={"i"} /> у поточному вузлі <InlineMath math={"t"} />.
             </p>
           </div>
         );
@@ -107,19 +107,19 @@ const Knowledge = () => {
             </p>
             <h4 style={{ fontSize: '1.2rem', margin: '1rem 0 0.5rem', color: 'var(--accent)' }}>Математична модель</h4>
             <p style={{ marginBottom: '1rem', lineHeight: '1.7' }}>
-              Рівняння гіперплощини з параметрами ваг <InlineMath math="w"/> та зсуву <InlineMath math="b"/> задається як:
+              Рівняння гіперплощини з параметрами ваг <InlineMath math={"w"} /> та зсуву <InlineMath math={"b"} /> задається як:
             </p>
             <div style={{ margin: '1.5rem 0', padding: '1.25rem', background: 'var(--bg-main)', borderRadius: '8px', overflowX: 'auto' }}>
-              <BlockMath math="w^T x + b = 0" />
+              <BlockMath math={"w^T x + b = 0"} />
             </div>
             <p style={{ marginBottom: '1rem', lineHeight: '1.7' }}>
               Оптимізаційне завдання для побудови класифікатора з м'якою маржею (Soft Margin SVM):
             </p>
             <div style={{ margin: '1.5rem 0', padding: '1.25rem', background: 'var(--bg-main)', borderRadius: '8px', overflowX: 'auto' }}>
-              <BlockMath math="\\min_{w, b, \\xi} \\left( \\frac{1}{2} \\|w\\|^2 + C \\sum_{i=1}^{n} \\xi_i \\right) \\quad \\text{s.t.} \\quad y_i(w^T x_i + b) \\ge 1 - \\xi_i, \\ \\xi_i \\ge 0" />
+              <BlockMath math={"\\min_{w, b, \\xi} \\left( \\frac{1}{2} \\|w\\|^2 + C \\sum_{i=1}^{n} \\xi_i \\right) \\quad \\text{s.t.} \\quad y_i(w^T x_i + b) \\ge 1 - \\xi_i, \\ \\xi_i \\ge 0"} />
             </div>
             <p style={{ marginBottom: '1rem', lineHeight: '1.7' }}>
-              де <InlineMath math="C"/> — гіперпараметр регуляризації (контролює баланс між шириною зазору та помилками класифікації), а <InlineMath math="\\xi_i"/> — слабкі змінні (slack variables) для штрафування точок, які порушують межі розділення.
+              де <InlineMath math={"C"} /> — гіперпараметр регуляризації (контролює баланс між шириною зазору та помилками класифікації), а <InlineMath math={"\\xi_i"} /> — слабкі змінні (slack variables) для штрафування точок, які порушують межі розділення.
             </p>
           </div>
         );
@@ -127,23 +127,23 @@ const Knowledge = () => {
         return (
           <div>
             <p style={{ marginBottom: '1.5rem', lineHeight: '1.7', color: 'var(--text-main)' }}>
-              <strong>Логістична регресія (Logistic Regression)</strong> — лінійний алгоритм класифікації, який використовується для оцінювання ймовірностей належності об'єктів до класів. Модель перетворює значення лінійної комбінації ознак за допомогою логістичної функції у діапазон ймовірностей <InlineMath math="[0, 1]"/>.
+              <strong>Логістична регресія (Logistic Regression)</strong> — лінійний алгоритм класифікації, який використовується для оцінювання ймовірностей належності об'єктів до класів. Модель перетворює значення лінійної комбінації ознак за допомогою логістичної функції у діапазон ймовірностей <InlineMath math={"[0, 1]"} />.
             </p>
             <h4 style={{ fontSize: '1.2rem', margin: '1rem 0 0.5rem', color: 'var(--accent)' }}>Математична модель</h4>
             <p style={{ marginBottom: '1rem', lineHeight: '1.7' }}>
               Ймовірність приналежності об'єкта до позитивного класу описується логістичною (сигмоїдною) функцією:
             </p>
             <div style={{ margin: '1.5rem 0', padding: '1.25rem', background: 'var(--bg-main)', borderRadius: '8px', overflowX: 'auto' }}>
-              <BlockMath math="P(y=1 \\mid x) = \\sigma(w^T x + b) = \\frac{1}{1 + e^{-(w^T x + b)}}" />
+              <BlockMath math={"P(y=1 \\mid x) = \\sigma(w^T x + b) = \\frac{1}{1 + e^{-(w^T x + b)}}"} />
             </div>
             <p style={{ marginBottom: '1rem', lineHeight: '1.7' }}>
               Навчання здійснюється шляхом мінімізації негативного логарифму функції правдоподібності (Cross-Entropy Loss):
             </p>
             <div style={{ margin: '1.5rem 0', padding: '1.25rem', background: 'var(--bg-main)', borderRadius: '8px', overflowX: 'auto' }}>
-              <BlockMath math="L(w, b) = -\\frac{1}{n} \\sum_{i=1}^{n} \\left[ y_i \\ln(\\hat{y}_i) + (1 - y_i) \\ln(1 - \\hat{y}_i) \\right]" />
+              <BlockMath math={"L(w, b) = -\\frac{1}{n} \\sum_{i=1}^{n} \\left[ y_i \\ln(\\hat{y}_i) + (1 - y_i) \\ln(1 - \\hat{y}_i) \\right]"} />
             </div>
             <p style={{ marginBottom: '1rem', lineHeight: '1.7' }}>
-              де <InlineMath math="\\hat{y}_i = \\sigma(w^T x_i + b)"/> — прогнозована моделлю ймовірність приналежності до класу 1 для <InlineMath math="i"/>-го об'єкта.
+              де <InlineMath math={"\\hat{y}_i = \\sigma(w^T x_i + b)"} /> — прогнозована моделлю ймовірність приналежності до класу 1 для <InlineMath math={"i"} />-го об'єкта.
             </p>
           </div>
         );
