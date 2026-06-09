@@ -268,9 +268,25 @@ const Cleaning = () => {
               <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Database size={20} color="var(--accent)" /> Структура даних
               </span>
-              {!showFullData && (
+              {!showFullData ? (
                 <button className="btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }} onClick={handleShowFullData}>
                   Показати всі дані
+                </button>
+              ) : (
+                <button 
+                  className="btn-primary" 
+                  style={{ 
+                    padding: '0.4rem 0.8rem', 
+                    fontSize: '0.75rem', 
+                    background: 'transparent', 
+                    border: '1px solid var(--border-color)', 
+                    color: 'var(--text-main)', 
+                    boxShadow: 'none',
+                    cursor: 'pointer'
+                  }} 
+                  onClick={() => setShowFullData(false)}
+                >
+                  Вийти з повного перегляду
                 </button>
               )}
             </h2>
