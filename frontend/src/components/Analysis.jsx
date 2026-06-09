@@ -36,13 +36,15 @@ CentroidShape.propTypes = {
 const Analysis = () => {
   const { 
     fileId, columns, targetColumn, setTargetColumn, 
-    selectedFeatures, toggleFeature, results, setResults, setLoading,
+    selectedFeatures, toggleFeature, results, setResults, loading, setLoading,
     primaryKey
   } = useStore();
 
   const [analysisType, setAnalysisType] = useState('classification');
   const [algorithm, setAlgorithm] = useState('rf');
   const [clusters, setClusters] = useState(3);
+  const [progress, setProgress] = useState(0);
+  const [statusText, setStatusText] = useState('');
 
   const runAnalysis = async () => {
     if (selectedFeatures.length === 0) {
@@ -59,7 +61,31 @@ const Analysis = () => {
         return;
       }
     }
+    
     setLoading(true);
+    setProgress(5);
+    const messages = [
+      'Ініціалізація моделей машинного навчання...',
+      'Нормалізація та масштабування обраних ознак...',
+      'Навчання алгоритму на тренувальній вибірці...',
+      'Розрахунок метрик ефективності та крос-валідація...',
+      'Генерація аналітичного звіту за допомогою Data Science Engine...'
+    ];
+    let msgIdx = 0;
+    setStatusText(messages[0]);
+    
+    const msgInterval = setInterval(() => {
+      msgIdx = (msgIdx + 1) % messages.length;
+      setStatusText(messages[msgIdx]);
+    }, 1200);
+    
+    const progInterval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 90) return prev;
+        return prev + Math.round((90 - prev) * 0.15 + Math.random() * 2);
+      });
+    }, 150);
+
     try {
       const payload = {
         file_path: fileId,
@@ -71,10 +97,15 @@ const Analysis = () => {
       };
       
       const res = await axios.post(`${API_URL}/analyze`, payload);
-      setResults(res.data);
+      setProgress(100);
+      setTimeout(() => {
+        setResults(res.data);
+      }, 200);
     } catch (err) {
       Swal.fire('Помилка', err.response?.data?.error || err.message, 'error');
     } finally {
+      clearInterval(msgInterval);
+      clearInterval(progInterval);
       setLoading(false);
     }
   };
@@ -179,7 +210,44 @@ const Analysis = () => {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-        {results && (
+        {loading && (
+          <div className="panel" style={{ marginTop: 0, padding: '4rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2rem' }}>
+            <div style={{ position: 'relative', width: '80px', height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ 
+                position: 'absolute', 
+                width: '100%', 
+                height: '100%', 
+                border: '4px solid var(--border-color)', 
+                borderTopColor: 'var(--accent)', 
+                borderRadius: '50%', 
+                animation: 'spin 1s linear infinite' 
+              }}></div>
+              <Cpu size={36} color="var(--accent)" style={{ animation: 'pulse 1.5s ease-in-out infinite' }} />
+            </div>
+            
+            <div style={{ width: '100%', maxWidth: '400px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>
+                <span>Обробка та аналіз...</span>
+                <span>{progress}%</span>
+              </div>
+              <div style={{ width: '100%', height: '8px', background: 'var(--border-color)', borderRadius: '4px', overflow: 'hidden' }}>
+                <div style={{ 
+                  width: `${progress}%`, 
+                  height: '100%', 
+                  background: 'var(--accent)', 
+                  borderRadius: '4px', 
+                  transition: 'width 0.2s ease-out' 
+                }}></div>
+              </div>
+            </div>
+            
+            <div style={{ fontSize: '0.95rem', color: 'var(--text-main)', minHeight: '1.5rem', fontStyle: 'italic' }}>
+              {statusText}
+            </div>
+          </div>
+        )}
+
+        {results && !loading && (
           <div className="panel" style={{ marginTop: 0 }}>
             <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Результати {analysisType === 'classification' ? 'класифікації' : 'кластеризації'}</h2>
             
@@ -196,7 +264,7 @@ const Analysis = () => {
             </div>
 
             <div className="text-content-box" style={{ background: 'var(--bg-main)', padding: '1.5rem', borderRadius: '8px', marginTop: '2rem' }}>
-              <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Sparkles size={18} color="var(--accent)" /> Аналітичний висновок ШІ (Data Science)</h3>
+              <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Sparkles size={18} color="var(--accent)" /> - Аналітичний висновок ШІ (Data Science)</h3>
               <ul style={{ paddingLeft: '1.5rem', listStyleType: 'disc' }}>{results.recommendations.map((r, i) => <li key={i} style={{ marginBottom: '0.5rem' }}>{r}</li>)}</ul>
             </div>
             

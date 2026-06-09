@@ -1,6 +1,42 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { HelpCircle, Activity, Zap, Play, Pause, RotateCcw, SkipForward } from 'lucide-react';
-import { InlineMath, BlockMath } from 'react-katex';
+
+// Custom InlineMath component calling global KaTeX
+const InlineMath = ({ math }) => {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (ref.current && window.katex) {
+      try {
+        window.katex.render(math, ref.current, {
+          displayMode: false,
+          throwOnError: false
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  }, [math]);
+  return <span ref={ref} />;
+};
+
+// Custom BlockMath component calling global KaTeX
+const BlockMath = ({ math }) => {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (ref.current && window.katex) {
+      try {
+        window.katex.render(math, ref.current, {
+          displayMode: true,
+          throwOnError: false
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  }, [math]);
+  return <div ref={ref} />;
+};
+
 
 // Reusable animated algorithm visualizer component
 const AlgorithmVisualizer = ({ algorithm }) => {

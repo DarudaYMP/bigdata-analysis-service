@@ -22,6 +22,19 @@ function App() {
     setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
+  const handleResetData = () => {
+    const store = useStore.getState();
+    store.setFileId(null);
+    store.setColumns([]);
+    store.setPrimaryKey(null);
+    store.setTargetColumn('');
+    store.setSelectedFeatures([]);
+    store.setPreviewData([]);
+    store.setEdaInsights([]);
+    store.setResults(null);
+    store.setCurrentStep('ingestion');
+  };
+
   const renderContent = () => {
     switch (currentStep) {
       case 'welcome':
@@ -50,6 +63,24 @@ function App() {
           <h1>DATACLUSTER <span style={{ color: 'var(--accent)', fontWeight: '900' }}>PRO</span> <br /><span style={{ display: 'block', marginTop: '4px' }}>Statistical ML Engine v2.0</span></h1>
         </div>
         <div className="top-actions">
+          {fileId && (
+            <button 
+              className="btn-primary" 
+              style={{ 
+                padding: '0.4rem 0.8rem', 
+                fontSize: '0.75rem', 
+                background: 'transparent', 
+                border: '1px solid var(--border-color)', 
+                color: 'var(--text-main)', 
+                boxShadow: 'none', 
+                textTransform: 'none',
+                cursor: 'pointer'
+              }}
+              onClick={handleResetData}
+            >
+              Завантажити нові дані / Reset
+            </button>
+          )}
           <div className="status-badge"><Zap size={14} color="var(--accent)" /> Система: Готова</div>
           <button className="icon-btn" onClick={toggleTheme}>{theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}</button>
         </div>

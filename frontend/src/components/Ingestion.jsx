@@ -60,6 +60,9 @@ const Ingestion = () => {
       showError('Помилка завантаження файлу: ' + (err.response?.data?.error || err.message));
     } finally {
       setLoading(false);
+      if (e && e.target) {
+        e.target.value = '';
+      }
     }
   };
 
