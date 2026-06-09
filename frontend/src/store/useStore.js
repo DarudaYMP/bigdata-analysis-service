@@ -7,8 +7,11 @@ export const useStore = create((set) => ({
   theme: 'light',
   setTheme: (theme) => set({ theme }),
 
-  currentStep: 'ingestion', // ingestion, cleaning, visualization, analysis, help
+  currentStep: 'welcome', // welcome, ingestion, cleaning, visualization, analysis, help
   setCurrentStep: (step) => set({ currentStep: step }),
+
+  primaryKey: null,
+  setPrimaryKey: (key) => set({ primaryKey: key }),
 
   fileId: null,
   setFileId: (id) => set({ fileId: id }),

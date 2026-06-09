@@ -18,10 +18,20 @@ const Visualization = () => {
     visYCol, setVisYCol, 
     visChartType, setVisChartType, 
     visData, setVisData,
-    loading, setLoading 
+    loading, setLoading,
+    primaryKey
   } = useStore();
 
   const handlePlot = async () => {
+    if (primaryKey && visXCol === primaryKey && (!visYCol || visYCol === primaryKey)) {
+      Swal.fire(
+        'Обмеження аналізу',
+        `Неможливо побудувати графік виключно для колонки первинного ключа (${primaryKey}). Будь ласка, оберіть іншу вісь або додайте другу змінну для порівняння.`,
+        'warning'
+      );
+      return;
+    }
+
     setLoading(true);
     try {
       const payload = { file_path: fileId, x_col: visXCol, y_col: visYCol, chart_type: visChartType };

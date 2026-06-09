@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
-import { Settings2, BarChart4, Moon, Sun, HelpCircle, Database, Zap, Upload, Filter, Sparkles } from 'lucide-react';
+import { Settings2, BarChart4, Moon, Sun, HelpCircle, Database, Zap, Upload, Filter, Sparkles, Home } from 'lucide-react';
 import { useStore } from './store/useStore';
 import Swal from 'sweetalert2';
 import 'katex/dist/katex.min.css';
 
+import Welcome from './components/Welcome';
 import Ingestion from './components/Ingestion';
 import Cleaning from './components/Cleaning';
 import Visualization from './components/Visualization';
@@ -23,6 +24,8 @@ function App() {
 
   const renderContent = () => {
     switch (currentStep) {
+      case 'welcome':
+        return <Welcome />;
       case 'ingestion':
         return <Ingestion />;
       case 'cleaning':
@@ -34,7 +37,7 @@ function App() {
       case 'help':
         return <Knowledge />;
       default:
-        return <Ingestion />;
+        return <Welcome />;
     }
   };
 
@@ -57,6 +60,10 @@ function App() {
         {/* Sidebar Nav */}
         <aside className="sidebar">
           <div className="sidebar-heading">Робочий процес</div>
+
+          <div className={`nav-item ${currentStep === 'welcome' ? 'active' : ''}`} onClick={() => setCurrentStep('welcome')}>
+            <Home size={18} /> Головна сторінка
+          </div>
 
           <div className={`nav-item ${currentStep === 'ingestion' ? 'active' : ''}`} onClick={() => setCurrentStep('ingestion')}>
             <Upload size={18} /> Завантаження даних

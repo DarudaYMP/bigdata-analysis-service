@@ -36,7 +36,8 @@ CentroidShape.propTypes = {
 const Analysis = () => {
   const { 
     fileId, columns, targetColumn, setTargetColumn, 
-    selectedFeatures, toggleFeature, results, setResults, setLoading 
+    selectedFeatures, toggleFeature, results, setResults, setLoading,
+    primaryKey
   } = useStore();
 
   const [analysisType, setAnalysisType] = useState('classification');
@@ -47,6 +48,16 @@ const Analysis = () => {
     if (selectedFeatures.length === 0) {
       Swal.fire('Помилка', 'Оберіть хоча б одну ознаку.', 'error');
       return;
+    }
+    if (primaryKey) {
+      if (analysisType === 'classification' && targetColumn === primaryKey) {
+        Swal.fire('Обмеження аналізу', `Неможливо виконати класифікацію, використовуючи первинний ключ (${primaryKey}) як цільову змінну (Y).`, 'warning');
+        return;
+      }
+      if (selectedFeatures.length === 1 && selectedFeatures[0] === primaryKey) {
+        Swal.fire('Обмеження аналізу', `Неможливо побудувати модель машинного навчання виключно на ознаці первинного ключа (${primaryKey}).`, 'warning');
+        return;
+      }
     }
     setLoading(true);
     try {
@@ -185,7 +196,7 @@ const Analysis = () => {
             </div>
 
             <div className="text-content-box" style={{ background: 'var(--bg-main)', padding: '1.5rem', borderRadius: '8px', marginTop: '2rem' }}>
-              <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Sparkles size={18} color="var(--accent)" /> Бізнес-рекомендації ШІ</h3>
+              <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Sparkles size={18} color="var(--accent)" /> Аналітичний висновок ШІ (Data Science)</h3>
               <ul style={{ paddingLeft: '1.5rem', listStyleType: 'disc' }}>{results.recommendations.map((r, i) => <li key={i} style={{ marginBottom: '0.5rem' }}>{r}</li>)}</ul>
             </div>
             

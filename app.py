@@ -20,6 +20,14 @@ app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500 MB max
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
+def check_primary_key(df: pd.DataFrame):
+    """Check if the first column has 100% unique values and flag it as the primary key."""
+    if len(df) > 0 and len(df.columns) > 0:
+        first_col = df.columns[0]
+        if df[first_col].nunique() == len(df):
+            return first_col
+    return None
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     """Handle file uploads and return initial insights."""
@@ -58,7 +66,8 @@ def upload_file():
                 'file_path': save_path, 
                 'columns': columns,
                 'preview': preview_data,
-                'insights': eda_insights
+                'insights': eda_insights,
+                'primary_key': check_primary_key(df)
             })
         except Exception as e:
             return jsonify({'error': f'Failed to process file: {str(e)}'}), 500
@@ -89,7 +98,8 @@ def select_sheet():
             'file_path': save_path, 
             'columns': columns,
             'preview': preview_data,
-            'insights': eda_insights
+            'insights': eda_insights,
+            'primary_key': check_primary_key(df)
         })
     except Exception as e:
         return jsonify({'error': f'Failed to process sheet: {str(e)}'}), 500
@@ -101,6 +111,7 @@ def clean_data():
     file_path = data.get('file_path')
     action = data.get('action')
     subset = data.get('subset', [])
+    norm_type = data.get('norm_type')
     
     if not file_path or not os.path.exists(file_path):
         return jsonify({'error': 'File not found'}), 404
@@ -110,7 +121,7 @@ def clean_data():
         if df is None:
             return jsonify({'error': 'Unsupported file format'}), 400
             
-        df = clean_dataframe(df, action, subset)
+        df = clean_dataframe(df, action, subset, norm_type=norm_type)
         
         save_df(df, file_path)
         
@@ -122,7 +133,8 @@ def clean_data():
             'success': True,
             'preview': preview_data,
             'insights': eda_insights,
-            'columns': columns
+            'columns': columns,
+            'primary_key': check_primary_key(df)
         })
     except Exception as e:
         traceback.print_exc()

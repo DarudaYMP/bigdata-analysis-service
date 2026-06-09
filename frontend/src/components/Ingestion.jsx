@@ -14,7 +14,7 @@ const Ingestion = () => {
   const { 
     setFileId, setColumns, setTargetColumn, setVisXCol, 
     setPreviewData, setEdaInsights, setSelectedFeatures, 
-    setCurrentStep, setLoading, loading 
+    setCurrentStep, setLoading, loading, setPrimaryKey
   } = useStore();
   
   const fileInputRef = useRef(null);
@@ -27,6 +27,7 @@ const Ingestion = () => {
   const finishUpload = (data) => {
     setFileId(data.file_path);
     setColumns(data.columns);
+    setPrimaryKey(data.primary_key || null);
     setTargetColumn(data.columns[0]);
     setVisXCol(data.columns[0]);
     setPreviewData(data.preview || []);

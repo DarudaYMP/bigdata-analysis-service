@@ -1,14 +1,14 @@
 import pandas as pd
 from typing import List, Optional
 
-def clean_dataframe(df: pd.DataFrame, action: str, subset: Optional[List[str]] = None) -> pd.DataFrame:
+def clean_dataframe(df: pd.DataFrame, action: str, subset: Optional[List[str]] = None, **kwargs) -> pd.DataFrame:
     """
     Clean the dataframe based on the provided action.
     
     Args:
         df (pd.DataFrame): The dataframe to clean.
-        action (str): The cleaning action ('drop_duplicates', 'drop_nulls', 'lower_text').
-        subset (list of str, optional): Subset of columns to consider for duplicates.
+        action (str): The cleaning action ('drop_duplicates', 'drop_nulls', 'impute_nulls', 'normalize_text', 'lower_text').
+        subset (list of str, optional): Subset of columns to consider for duplicates or text normalization.
         
     Returns:
         pd.DataFrame: The cleaned dataframe.
@@ -20,6 +20,29 @@ def clean_dataframe(df: pd.DataFrame, action: str, subset: Optional[List[str]] =
             df = df.drop_duplicates()
     elif action == 'drop_nulls':
         df = df.dropna()
+    elif action == 'impute_nulls':
+        numeric_cols = df.select_dtypes(include=['int64', 'float64']).columns
+        categorical_cols = df.select_dtypes(include=['object', 'category']).columns
+
+        for col in numeric_cols:
+            if df[col].isnull().any():
+                df[col] = df[col].fillna(df[col].median())
+                
+        for col in categorical_cols:
+            if df[col].isnull().any():
+                mode_val = df[col].mode()
+                df[col] = df[col].fillna(mode_val[0] if not mode_val.empty else "Unknown")
+    elif action == 'normalize_text':
+        norm_type = kwargs.get('norm_type', 'lowercase')
+        cols = subset if subset else df.select_dtypes(include=['object', 'category']).columns
+        for col in cols:
+            if col in df.columns:
+                if norm_type == 'uppercase':
+                    df[col] = df[col].astype(str).str.upper()
+                elif norm_type == 'lowercase':
+                    df[col] = df[col].astype(str).str.lower()
+                elif norm_type == 'capitalize':
+                    df[col] = df[col].astype(str).str.capitalize()
     elif action == 'lower_text':
         categorical_cols = df.select_dtypes(include=['object', 'category']).columns
         for col in categorical_cols:
@@ -42,7 +65,7 @@ def impute_missing_values(df: pd.DataFrame) -> pd.DataFrame:
 
     for col in numeric_cols:
         if df[col].isnull().any():
-            df[col] = df[col].fillna(df[col].mean())
+            df[col] = df[col].fillna(df[col].median())
             
     for col in categorical_cols:
         if df[col].isnull().any():

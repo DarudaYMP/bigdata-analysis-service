@@ -206,29 +206,34 @@ def run_clustering(df: pd.DataFrame, feature_cols: List[str], k: int = 3, algori
 
 def generate_classification_summary(accuracy: float, f1_score: float, algorithm: str) -> Tuple[str, List[str]]:
     """
-    Generate business summary and recommendations for classification.
+    Generate scientific summary and recommendations for classification.
     """
     alg_name = 'Випадковий ліс' if algorithm == 'rf' else ('Метод опорних векторів (SVM)' if algorithm == 'svm' else 'Логістична регресія')
     summary = f"Обраний модуль ({alg_name}) побудував гіперплощину класифікації з Точністю (Accuracy) {accuracy:.4f} та F1-Оцінкою {f1_score:.4f}."
     
     fallback_recs = []
     if accuracy > 0.85:
-        fallback_recs.append("Модель демонструє високу прогностичну здатність. Бізнесу рекомендується автоматизувати рішення на базі цих даних.")
+        fallback_recs.append("Статистична помилка мінімальна. Ознаки мають високу роздільну здатність для даних класів.")
     elif accuracy > 0.7:
-        fallback_recs.append("Модель показує прийнятні результати, але варто зібрати додаткові точки дотику з клієнтами.")
+        fallback_recs.append("Виявлено помірний рівень класифікаційного шуму. Дисперсія даних може бути оптимізована.")
     else:
-        fallback_recs.append("Точність занадто низька. База даних не містить явних індикаторів для класифікації.")
+        fallback_recs.append("Модель має слабку узагальнюючу здатність. Статистичний розподіл ознак є недостатньо сепарабельним.")
 
-    prompt = f"Виступайте як старший бізнес-аналітик. У нас є модель машинного навчання ({alg_name}), яка класифікує клієнтську базу " \
-             f"з точністю {accuracy:.4f}. Надайте 2 конкретні, короткі бізнес-рекомендації або поради. " \
-             f"Відповідайте ВИКЛЮЧНО українською мовою."
+    prompt = (
+        f"Виступайте виключно як Data Scientist (фахівець із аналізу даних), а не бізнес-аналітик. "
+        f"У нас є модель машинного навчання ({alg_name}), яка класифікує дані з точністю (accuracy) {accuracy:.4f} "
+        f"та F1-оцінкою {f1_score:.4f}. Надайте 2 короткі науково-технічні висновки щодо якості класифікації, "
+        f"дисперсії даних, статистичної значущості або важливості ознак. "
+        f"Категорично ігноруйте будь-які бізнес-імпликації, фінансові прогнози чи маркетингові поради. "
+        f"Відповідайте виключно українською мовою у вигляді списку з 2 пунктів."
+    )
              
     recs = _get_llm_advice(prompt, fallback_recs)
     return summary, recs
 
 def generate_clustering_summary(silhouette: float, k: int, algorithm: str) -> Tuple[str, List[str]]:
     """
-    Generate business summary and recommendations for clustering.
+    Generate scientific summary and recommendations for clustering.
     """
     if algorithm == "dbscan":
         alg_name = "DBSCAN"
@@ -241,17 +246,21 @@ def generate_clustering_summary(silhouette: float, k: int, algorithm: str) -> Tu
     
     fallback_recs = []
     if silhouette > 0.71:
-        fallback_recs.append("Дані чітко розділені на групи. Це ідеальна база для гіпер-персоналізованого маркетингу.")
+        fallback_recs.append("Висока щільність кластерів. Структура розподілу чітко виражена в багатовимірному просторі ознак.")
     elif silhouette > 0.51:
-        fallback_recs.append("Виявлено помірну сегментацію. Зосередьте увагу на A/B тестуванні між знайденими групами.")
+        fallback_recs.append("Виявлено помірну силуетну щільність. Спостерігається часткове перекриття меж розподілу кластерів.")
     elif silhouette > 0.26:
-        fallback_recs.append("Клієнтська база не має яскраво виражених сегментів. Впроваджуйте масові пропозиції.")
+        fallback_recs.append("Слабка кластерна структура. Дисперсія всередині кластерів перевищує міжкластерну відстань.")
     else:
-        fallback_recs.append("Ситуація є абсолютно хаотичною. Сегментація на цей момент є недоцільною.")
+        fallback_recs.append("Хаотичний просторовий розподіл точок. Статистична кластеризація є непідтвердженою.")
 
-    prompt = f"Виступайте як старший маркетолог-аналітик. Алгоритм ({alg_name}) розбив базу користувачів " \
-             f"на {k} сегментів (кластерів) із показником silhouette density {silhouette:.4f}. " \
-             f"Надайте 2 короткі бізнес-рекомендації. Відповідайте ВИКЛЮЧНО українською мовою."
+    prompt = (
+        f"Виступайте виключно як Data Scientist (фахівець із аналізу даних), а не маркетолог чи бізнес-аналітик. "
+        f"Алгоритм ({alg_name}) побудував {k} кластерів із коефіцієнтом силуету (silhouette score) {silhouette:.4f}. "
+        f"Надайте 2 короткі науково-технічні висновки щодо щільності кластерів, дисперсії даних у просторі ознак "
+        f"та статистичного розподілу. Категорично ігноруйте будь-які маркетингові стратегії, бізнес-висновки чи фінансові прогнози. "
+        f"Відповідайте виключно українською мовою у вигляді списку з 2 пунктів."
+    )
              
     recs = _get_llm_advice(prompt, fallback_recs)
     return summary, recs
