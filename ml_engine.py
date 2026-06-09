@@ -37,7 +37,16 @@ def _get_llm_advice(prompt: str, fallback_recs: List[str]) -> List[str]:
             messages=[{"role": "user", "content": prompt}]
         )
         answer = response.choices[0].message.content.strip()
-        return [sentence.strip() for sentence in answer.split('.') if len(sentence) > 10]
+        import re
+        lines = [line.strip() for line in answer.split('\n') if line.strip()]
+        cleaned_recs = []
+        for line in lines:
+            cleaned = re.sub(r'^[\s\-\*\d\.\)]+\s*', '', line).strip()
+            if len(cleaned) > 10:
+                cleaned_recs.append(cleaned)
+        if len(cleaned_recs) >= 1:
+            return cleaned_recs
+        return fallback_recs
     except Exception as e:
         print("LLM Error:", str(e))
         return fallback_recs

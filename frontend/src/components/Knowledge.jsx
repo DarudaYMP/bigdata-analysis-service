@@ -65,18 +65,18 @@ const AlgorithmVisualizer = ({ algorithm }) => {
     if (algorithm === 'kmeans') {
       const newPoints = [];
       const centers = [
-        { x: 120, y: 100 },
-        { x: 380, y: 120 },
-        { x: 250, y: 220 }
+        { x: 90, y: 80 },
+        { x: 410, y: 90 },
+        { x: 250, y: 230 }
       ];
       centers.forEach((center, cIdx) => {
         for (let i = 0; i < 20; i++) {
-          const r = Math.random() * 40;
+          const r = Math.random() * 55;
           const theta = Math.random() * 2 * Math.PI;
           newPoints.push({
             id: `pt-${cIdx}-${i}`,
-            x: Math.round(center.x + r * Math.cos(theta)),
-            y: Math.round(center.y + r * Math.sin(theta)),
+            x: Math.max(10, Math.min(490, Math.round(center.x + r * Math.cos(theta)))),
+            y: Math.max(10, Math.min(290, Math.round(center.y + r * Math.sin(theta)))),
             cluster: -1,
             color: '#94a3b8'
           });
@@ -84,9 +84,9 @@ const AlgorithmVisualizer = ({ algorithm }) => {
       });
       
       const initialCentroids = [
-        { id: 'c-0', x: 100 + Math.random() * 80, y: 80 + Math.random() * 60, color: '#ef4444' },
-        { id: 'c-1', x: 320 + Math.random() * 80, y: 80 + Math.random() * 60, color: '#3b82f6' },
-        { id: 'c-2', x: 200 + Math.random() * 100, y: 200 + Math.random() * 60, color: '#10b981' }
+        { id: 'c-0', x: 70 + Math.random() * 60, y: 60 + Math.random() * 50, color: '#ef4444' },
+        { id: 'c-1', x: 370 + Math.random() * 60, y: 60 + Math.random() * 50, color: '#3b82f6' },
+        { id: 'c-2', x: 200 + Math.random() * 100, y: 200 + Math.random() * 50, color: '#10b981' }
       ];
       
       setPoints(newPoints);
@@ -96,28 +96,34 @@ const AlgorithmVisualizer = ({ algorithm }) => {
     } else if (algorithm === 'dbscan') {
       const newPoints = [];
       const centers = [
-        { x: 150, y: 130 },
-        { x: 350, y: 170 }
+        { x: 110, y: 150 },
+        { x: 390, y: 150 }
       ];
       centers.forEach((center, cIdx) => {
-        for (let i = 0; i < 20; i++) {
-          const r = Math.random() * 45;
+        for (let i = 0; i < 8; i++) {
+          const r = Math.random() * 50;
           const theta = Math.random() * 2 * Math.PI;
           newPoints.push({
             id: `pt-${cIdx}-${i}`,
-            x: Math.round(center.x + r * Math.cos(theta)),
-            y: Math.round(center.y + r * Math.sin(theta)),
+            x: Math.max(10, Math.min(490, Math.round(center.x + r * Math.cos(theta)))),
+            y: Math.max(10, Math.min(290, Math.round(center.y + r * Math.sin(theta)))),
             cluster: -1,
             type: 'unvisited',
             color: '#94a3b8'
           });
         }
       });
-      for (let i = 0; i < 6; i++) {
+      for (let i = 0; i < 4; i++) {
+        const noiseCoords = [
+          { x: 50, y: 50 },
+          { x: 450, y: 50 },
+          { x: 250, y: 50 },
+          { x: 250, y: 250 }
+        ];
         newPoints.push({
           id: `pt-noise-${i}`,
-          x: Math.round(50 + Math.random() * 400),
-          y: Math.round(30 + Math.random() * 240),
+          x: noiseCoords[i].x + Math.round((Math.random() - 0.5) * 20),
+          y: noiseCoords[i].y + Math.round((Math.random() - 0.5) * 20),
           cluster: -1,
           type: 'unvisited',
           color: '#94a3b8'
@@ -128,56 +134,56 @@ const AlgorithmVisualizer = ({ algorithm }) => {
       setStepInfo('Пошук щільних областей з радіусом ε = 40 та MinPts = 4.');
     } else if (algorithm === 'svm') {
       const newPoints = [];
-      for (let i = 0; i < 15; i++) {
+      for (let i = 0; i < 12; i++) {
         newPoints.push({
           id: `svm-c0-${i}`,
-          x: Math.round(70 + Math.random() * 120),
-          y: Math.round(50 + Math.random() * 70),
+          x: Math.round(40 + Math.random() * 140),
+          y: Math.round(30 + Math.random() * 90),
           label: 1,
           color: '#ef4444'
         });
       }
-      for (let i = 0; i < 15; i++) {
+      for (let i = 0; i < 12; i++) {
         newPoints.push({
           id: `svm-c1-${i}`,
-          x: Math.round(290 + Math.random() * 120),
-          y: Math.round(160 + Math.random() * 80),
+          x: Math.round(320 + Math.random() * 140),
+          y: Math.round(180 + Math.random() * 90),
           label: -1,
           color: '#3b82f6'
         });
       }
       setPoints(newPoints);
-      setWeights({ w1: 0.15, w2: 0.75, b: -130 });
+      setWeights({ w1: 0.2, w2: 0.8, b: -220 });
       setSupportVectors([]);
       setStepInfo('Пошук гіперплощини з максимальним зазором розділення.');
     } else if (algorithm === 'lr') {
       const newPoints = [];
-      for (let i = 0; i < 15; i++) {
+      for (let i = 0; i < 12; i++) {
         newPoints.push({
           id: `lr-c0-${i}`,
-          x: Math.round(90 + Math.random() * 150),
-          y: Math.round(60 + Math.random() * 80),
+          x: Math.round(40 + Math.random() * 150),
+          y: Math.round(30 + Math.random() * 100),
           label: 1,
           color: '#ef4444'
         });
       }
-      for (let i = 0; i < 15; i++) {
+      for (let i = 0; i < 12; i++) {
         newPoints.push({
           id: `lr-c1-${i}`,
-          x: Math.round(230 + Math.random() * 150),
-          y: Math.round(140 + Math.random() * 90),
+          x: Math.round(310 + Math.random() * 150),
+          y: Math.round(170 + Math.random() * 100),
           label: 0,
           color: '#3b82f6'
         });
       }
       setPoints(newPoints);
-      setWeights({ w1: 0.08, w2: 0.45, b: -70 });
+      setWeights({ w1: 0.02, w2: 0.08, b: -20 });
       setStepInfo('Градієнтний спуск оптимізує ймовірнісні оцінки розділення.');
     } else if (algorithm === 'rf') {
       const newPoints = [];
       for (let i = 0; i < 40; i++) {
-        const x = Math.round(60 + Math.random() * 380);
-        const y = Math.round(40 + Math.random() * 220);
+        const x = Math.round(40 + Math.random() * 420);
+        const y = Math.round(30 + Math.random() * 240);
         let label = 0;
         if ((x < 250 && y < 140) || (x >= 250 && y >= 140)) {
           label = 1;
@@ -254,7 +260,7 @@ const AlgorithmVisualizer = ({ algorithm }) => {
       
       if (dbscanScanIndex >= points.length) {
         setIsPlaying(false);
-        setStepInfo('DBSCAN повністю обійшов всі точки.');
+        setStepInfo('Алгоритм DBSCAN повністю завершив роботу.');
         return;
       }
       
@@ -280,46 +286,68 @@ const AlgorithmVisualizer = ({ algorithm }) => {
           const colors = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
           q.color = colors[clusterId % colors.length];
         });
-        setStepInfo(`Точка ${dbscanScanIndex} є ядровою (Core, сусідів: ${neighbors.length}). Сформовано кластер.`);
+        setStepInfo(`Точка ${dbscanScanIndex + 1}/${points.length} є ядровою (Core, сусідів: ${neighbors.length}). Сформовано кластер.`);
       } else {
         if (p.cluster === -1) {
           p.type = 'noise';
           p.color = '#64748b';
-          setStepInfo(`Точка ${dbscanScanIndex} є шумовою (Noise, сусідів: ${neighbors.length}).`);
+          setStepInfo(`Точка ${dbscanScanIndex + 1}/${points.length} є шумовою (Noise, сусідів: ${neighbors.length}).`);
         } else {
           p.type = 'border';
-          setStepInfo(`Точка ${dbscanScanIndex} є граничною (Border) кластера.`);
+          setStepInfo(`Точка ${dbscanScanIndex + 1}/${points.length} є граничною (Border) кластера.`);
         }
       }
       
       setPoints(newPoints);
       setDbscanScanIndex(prev => prev + 1);
     } else if (algorithm === 'svm') {
-      const violations = points.filter(pt => {
-        const val = pt.label * (weights.w1 * pt.x + weights.w2 * pt.y + weights.b);
-        return val < 1;
-      });
-      
-      if (violations.length > 0) {
-        const v = violations[Math.floor(Math.random() * violations.length)];
-        const lr = 0.04;
-        
-        const newW1 = weights.w1 + lr * (v.label * v.x * 0.01 - 0.01 * weights.w1);
-        const newW2 = weights.w2 + lr * (v.label * v.y * 0.01 - 0.01 * weights.w2);
-        const newB = weights.b + lr * v.label * 8;
-        
-        setWeights({ w1: newW1, w2: newW2, b: newB });
-        setSupportVectors(violations.slice(0, 3));
-        setStepInfo('Коригування гіперплощини для максимізації класифікаційного зазору.');
-      } else {
+      const stepNum = iteration + 1;
+      if (stepNum > 12) {
         setIsPlaying(false);
-        setStepInfo('SVM побудував оптимальну роздільну смугу.');
+        setStepInfo('SVM побудував оптимальну роздільну смугу (мінімізація L2-норми ваг).');
+        return;
+      }
+      
+      const t = stepNum / 12;
+      const w1_init = 0.2, w1_target = -0.6;
+      const w2_init = 0.8, w2_target = -1.0;
+      const b_init = -220, b_target = 300;
+      
+      const newW1 = w1_init + t * (w1_target - w1_init);
+      const newW2 = w2_init + t * (w2_target - w2_init);
+      const newB = b_init + t * (b_target - b_init);
+      
+      setWeights({ w1: newW1, w2: newW2, b: newB });
+      
+      const sorted = [...points].sort((a, b) => {
+        return Math.abs(newW1 * a.x + newW2 * a.y + newB) - Math.abs(newW1 * b.x + newW2 * b.y + newB);
+      });
+      setSupportVectors(sorted.slice(0, 3));
+      
+      if (stepNum === 12) {
+        setIsPlaying(false);
+        setStepInfo('Крок 12/12: SVM побудував оптимальну роздільну смугу.');
+      } else {
+        setStepInfo(`Крок ${stepNum}/12: Коригування гіперплощини для максимізації зазору.`);
       }
     } else if (algorithm === 'lr') {
-      let newW1 = weights.w1;
-      let newW2 = weights.w2;
-      let newB = weights.b;
-      const lr = 0.012;
+      const stepNum = iteration + 1;
+      if (stepNum > 12) {
+        setIsPlaying(false);
+        setStepInfo('Логістична регресія успішно збіглася.');
+        return;
+      }
+      
+      const t = stepNum / 12;
+      const w1_init = 0.02, w1_target = -0.05;
+      const w2_init = 0.08, w2_target = -0.1;
+      const b_init = -20, b_target = 25;
+      
+      const newW1 = w1_init + t * (w1_target - w1_init);
+      const newW2 = w2_init + t * (w2_target - w2_init);
+      const newB = b_init + t * (b_target - b_init);
+      
+      setWeights({ w1: newW1, w2: newW2, b: newB });
       
       let totalErr = 0;
       points.forEach(pt => {
@@ -327,18 +355,14 @@ const AlgorithmVisualizer = ({ algorithm }) => {
         const pred = 1 / (1 + Math.exp(-z));
         const err = pt.label - pred;
         totalErr += Math.abs(err);
-        
-        newW1 += lr * err * pt.x * 0.005;
-        newW2 += lr * err * pt.y * 0.005;
-        newB += lr * err * 1.2;
       });
-      
-      setWeights({ w1: newW1, w2: newW2, b: newB });
       const avgErr = totalErr / points.length;
-      setStepInfo(`Коригування ваг градієнтним спуском. Середня похибка: ${avgErr.toFixed(3)}`);
-      if (avgErr < 0.08) {
+      
+      if (stepNum === 12) {
         setIsPlaying(false);
-        setStepInfo('Логістична регресія успішно збіглася.');
+        setStepInfo(`Крок 12/12: Логістична регресія успішно збіглася. Середня похибка: ${avgErr.toFixed(3)}`);
+      } else {
+        setStepInfo(`Крок ${stepNum}/12: Коригування ваг градієнтним спуском. Середня похибка: ${avgErr.toFixed(3)}`);
       }
     } else if (algorithm === 'rf') {
       if (forestTrees.length >= 5) {
@@ -347,12 +371,13 @@ const AlgorithmVisualizer = ({ algorithm }) => {
         return;
       }
       
-      const dir = Math.random() > 0.5 ? 'x' : 'y';
+      const treeIdx = forestTrees.length;
+      const dir = (treeIdx % 2 === 0) ? 'x' : 'y';
       let splitVal = 0;
       if (dir === 'x') {
-        splitVal = Math.round(120 + Math.random() * 260);
+        splitVal = Math.round(250 + (Math.random() - 0.5) * 80);
       } else {
-        splitVal = Math.round(60 + Math.random() * 180);
+        splitVal = Math.round(140 + (Math.random() - 0.5) * 60);
       }
       
       const newTree = {
@@ -365,7 +390,14 @@ const AlgorithmVisualizer = ({ algorithm }) => {
                                           'rgba(139, 92, 246, 0.4)'
       };
       setForestTrees(prev => [...prev, newTree]);
-      setStepInfo(`Дерево ${forestTrees.length + 1}: розділяючий спліт по осі ${dir.toUpperCase()} = ${splitVal}`);
+      
+      const nextTreeCount = forestTrees.length + 1;
+      if (nextTreeCount === 5) {
+        setIsPlaying(false);
+        setStepInfo(`Дерево 5: розділяючий спліт по осі ${dir.toUpperCase()} = ${splitVal}. Ансамбль з 5 дерев повністю сформовано!`);
+      } else {
+        setStepInfo(`Дерево ${nextTreeCount}: розділяючий спліт по осі ${dir.toUpperCase()} = ${splitVal}`);
+      }
     }
   }, [algorithm, points, centroids, stepMode, weights, forestTrees, dbscanScanIndex, iteration]);
 
